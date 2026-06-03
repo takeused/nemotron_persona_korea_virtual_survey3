@@ -1,0 +1,20 @@
+# 비밀: 실제 API 키 포함 — 절대 커밋 금지
+set_api_key.ps1
+
+# 원본 데이터셋(~1.9GB): HuggingFace에서 별도 다운로드
+/data/
+
+# 임시/스크래치 산출물
+output/_*.jsonl
+output/pilot_*.jsonl
+output/pilot_personas.jsonl
+
+# 대용량 참조(원 보고서 전체)
+survey_ref/보고서_전체.pdf
+
+# 파이썬 캐시
+__pycache__/
+*.pyc
+
+# Claude Code 로컬 설정(머신 전용)
+.claude/settings.local.json
