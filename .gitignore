@@ -6,6 +6,8 @@ set_api_key.ps1
 
 # 임시/스크래치 산출물
 output/_*.jsonl
+output/_*.json
+output/personas_failed.jsonl
 output/pilot_*.jsonl
 output/pilot_personas.jsonl
 
