@@ -86,8 +86,10 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
                            {"role": "user", "content": f"다음 항목이 잘못되었습니다: {last_err}. 모든 문항을 규칙에 맞게 다시 JSON으로만 답하십시오."}]
         except Exception as e:
             last_err = f"{type(e).__name__}: {e}"
-            wait = 4.0 * attempt if ("429" in str(e) or "too_many" in str(e) or "queue" in str(e)) else 1.5 * attempt
-            time.sleep(wait)
+            # 재시도는 다음 루프의 _limiter.wait()가 min_interval만큼 간격을 강제하므로
+            # 별도 백오프는 거의 불필요(중복 누적 방지). 비-429 일시오류에만 짧은 지터 추가.
+            is_429 = ("429" in str(e) or "too_many" in str(e) or "queue" in str(e))
+            time.sleep(0.0 if is_429 else min(3.0, 1.0 * attempt))
     return {"uuid": rec["persona"]["uuid"], "demographics": rec["demographics"],
             "answers": None, "model": model, "error": last_err}
 
