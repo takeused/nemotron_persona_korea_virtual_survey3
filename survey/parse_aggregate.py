@@ -108,6 +108,25 @@ def crosstab_mean(title, recs, weights, getval, group_key, label_map):
     return f"<h3>{esc(title)}</h3><table><tr><th>구분</th><th>가중평균</th><th>n</th></tr>{rows}</table>"
 
 
+def demo_table(title, recs, weights, getval, label_map=None, order=None):
+    """인구통계 분포: 구분별 (가중%, 비가중%, n). order로 정렬 고정 가능."""
+    tw = sum(weights)
+    wsum = collections.defaultdict(float)
+    csum = collections.Counter()
+    for r, w in zip(recs, weights):
+        v = getval(r)
+        wsum[v] += w
+        csum[v] += 1
+    keys = order if order else sorted(wsum, key=lambda k: -wsum[k])
+    rows = ""
+    for k in keys:
+        lab = label_map.get(k, k) if label_map else k
+        rows += (f"<tr><td>{esc(lab)}</td><td class=n>{100*wsum[k]/tw:.1f}%</td>"
+                 f"<td class=n>{100*csum[k]/len(recs):.1f}%</td><td class=n>{csum[k]}</td></tr>")
+    return (f"<h3>{esc(title)}</h3><table><tr><th>구분</th><th>가중%</th>"
+            f"<th>비가중%</th><th>n</th></tr>{rows}</table>")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--responses", default=os.path.join(OUT_DIR, "responses_phase1.jsonl"))
@@ -169,17 +188,43 @@ def main():
              + crosstab_mean("Q6 심각성 — 지역", recs, weights, A("Q6"), lambda r: r["stratum"]["province_code"], PROVINCE_LABEL)
              + crosstab_mean("Q5 관심도 — 연령대", recs, weights, A("Q5"), lambda r: r["stratum"]["age_group"], AGE_LABEL))
 
+    # ── 인구통계(Q1~Q4) 표본 구성 분포 ──
+    age_order = [AGE_LABEL[i] for i in sorted(AGE_LABEL)]
+    demo = (demo_table("Q1. 성별", recs, weights, lambda r: SEX_LABEL[r["demographics"]["Q1"]], order=list(SEX_LABEL.values()))
+            + demo_table("Q2. 연령대", recs, weights, lambda r: r["stratum"]["age_band"], order=age_order)
+            + demo_table("Q3. 학력", recs, weights, lambda r: EDU_LABEL[r["demographics"]["Q3"]], order=list(EDU_LABEL.values()))
+            + demo_table("Q4. 지역", recs, weights, lambda r: PROVINCE_LABEL[r["demographics"]["Q4"]])
+            + demo_table("직업 (상위 10)", recs, weights, lambda r: r["occupation"],
+                         order=[c for c, _ in collections.Counter(r["occupation"] for r in recs).most_common(10)]))
+
+    # ── 한계 박스용 데이터 기반 지표 ──
+    q6dist = wpct(recs, weights, A("Q6"), range(1, 6))
+    q6max = max(v[0] for v in q6dist.values())              # Q6 단일 보기 최대 가중%
+    q12max = max(q12first.values()) if q12first else 0.0    # Q12 1순위 최대 쏠림%
+    reg_means = [wmean([r for r in recs if r["stratum"]["province_code"] == pc],
+                       [w for r, w in zip(recs, weights) if r["stratum"]["province_code"] == pc], A("Q6"))
+                 for pc in set(r["stratum"]["province_code"] for r in recs)]
+    q6range = max(reg_means) - min(reg_means)               # Q6 지역별 가중평균 범위(점)
+    caveat = (f"<b>⚠ 해석 시 유의 — 합성 응답의 분산 한계</b><br>"
+              f"본 결과는 LLM 합성 페르소나(zai-glm-4.7)의 1인칭 응답으로, <b>실제 인간 표본보다 응답 분산이 작은</b> 경향이 있습니다. "
+              f"관측 예: Q6 심각성은 단일 보기에 <b>{q6max:.0f}%</b>가 집중, Q12 위험성 판단기준은 1순위가 <b>{q12max:.0f}%</b> 한 항목에 쏠렸습니다. "
+              f"교차분석의 집단 간 가중평균 차이도 매우 작습니다(예: Q6 지역별 범위 <b>{q6range:.2f}점</b>). "
+              f"→ <b>평균·순위 등 전반적 경향</b>은 참고 가능하나, <b>하위집단 간 미세한 수치 차이는 통계적으로 과대해석하지 않도록</b> 주의가 필요합니다.")
+
     style = ("body{font-family:'Malgun Gothic',sans-serif;max-width:1000px;margin:24px auto;color:#222;padding:0 16px}"
              "table{border-collapse:collapse;margin:8px 0 20px;width:100%}"
              "th,td{border:1px solid #ddd;padding:5px 9px;font-size:14px}th{background:#f3f4f6}"
              ".n{text-align:right;font-variant-numeric:tabular-nums}h2{border-bottom:2px solid #444;padding-top:12px}"
-             ".mean{color:#1a5;margin:2px 0 6px}.note{background:#fff8e1;padding:10px 14px;border-left:4px solid #fb0;font-size:13px}")
+             ".mean{color:#1a5;margin:2px 0 6px}.note{background:#fff8e1;padding:10px 14px;border-left:4px solid #fb0;font-size:13px}"
+             ".warn{background:#fdecea;padding:10px 14px;border-left:4px solid #e53935;font-size:13px;margin:12px 0}")
     body = f"""<!doctype html><meta charset=utf-8><title>재난안전 인식조사 — 합성 페르소나 1차(Q1~Q13)</title>
 <style>{style}</style>
 <h1>재난안전 기술 대국민 인식조사 — 합성 페르소나 결과 (1차: Q1~Q13)</h1>
 <div class=note>Nemotron-Personas-Korea 페르소나가 zai-glm-4.7로 1인칭 응답. 표본 {n}명(층화추출, 표 7.3 재현).
 사후층화 가중치(표 7.2 모집단) 적용. 성공률 {100*n/n_total:.1f}% (실패 {n_fail}).
 가중%=모집단 추정치, 비가중%=원표본.</div>
+<div class=warn>{caveat}</div>
+<h2>II-0. 표본 구성 (인구통계 Q1~Q4)</h2>{demo}
 <h2>II-1. 관심도·심각성</h2>{q5}{q6}
 <h2>II-2. 2024 재난 인식 · 판단</h2>{q7}{q12}{q13}
 <h2>II-3. 가장 위험한 재난유형 (가중 Borda: 1순위3·2순위2·3순위1점)</h2>{ranks}
