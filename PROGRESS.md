@@ -1,12 +1,40 @@
 # 진행상황 인수인계 (PROGRESS)
 
-마지막 업데이트: 2026-06-05 (회사에서 이어하기용 커밋)
+마지막 업데이트: 2026-06-08 (★1차 Q5~Q13 전량 완료 — n=542 집계·리포트 생성)
 
-## ⚡ 회사에서 이어하기 (fresh clone)
+## ✅✅ 1차(Q1~Q13) 완료 — 현재 상태
+- **전체 성공 542명 / topup 197·197 완료 (잔여 0, 실패 0).** 170개 층 전부 충족, 성공자 전원 9문항(Q5~Q13) 누락 0. 목표 n≈542 정확히 달성.
+- **산출물:** `output/responses_phase1.jsonl`(원본 응답), `output/responses_phase1.csv`(542행), `output/report_phase1.html`(사후가중 집계 + Borda 순위 + 인구통계 교차분석).
+- 재집계 명령: `chcp 65001 > $null; $env:PYTHONUTF8="1"; py survey/parse_aggregate.py`
+- 참고: 응답파일에 초기(540초 시절) 429 실패행 41개가 남아있으나 **무해**(parse_aggregate가 성공우선 dedup으로 자동 제외, 해당 층은 이미 충족돼 topup 대상 아니었음).
+
+### 핵심 학습(다음 실행/2차에 그대로 적용)
+- ★★ **회사망 TLS 차단 해결됨(중요):** `run_survey.py` 시작부에 `truststore.inject_into_ssl()` 추가함(커밋됨). 회사 보안 프록시가 self-signed CA로 HTTPS 가로채 → Python이 `CERTIFICATE_VERIFY_FAILED`로 전부 실패하던 문제. truststore가 OS 인증서저장소(사내 CA 포함) 사용해 통과. **이거 없으면 회사망에서 한 줄도 안 들어옴.** (`py -c "import truststore"`로 설치 확인, 없으면 `py -m pip install truststore`.)
+- ★ **페이싱 540→300→240초로 단축 가능했음.** 실측 헤더로 일일토큰 버킷 여유(거의 만충 ~960K) 확인 후 결정. 240초도 att=1 대부분·실패 0으로 안정. 더 당기면 시간당 한도(150요청/시=24초)와 일일토큰 재고갈 위험 — 240초가 무난한 하한. (집/한가한 망이면 더 공격적으로 가능하나 실측 헤더 먼저 확인.)
+- ★ **백그라운드 프로세스는 세션 env 상속 안 함** → 키를 명령 환경에 직접 넣거나 점-소싱 먼저.
+- ★ **굳이 멈출 땐 run_survey 프로세스만** 종료: `Get-CimInstance Win32_Process -Filter "Name='python.exe'" | ? { $_.CommandLine -like '*run_survey*' } | % { Stop-Process -Id $_.ProcessId -Force }` (다른 python(예: http.server 3737)은 건드리지 말 것.)
+
+## ➡️ 다음 단계: 2차 Q14~Q30
+```powershell
+chcp 65001 > $null; $env:PYTHONUTF8="1"; $env:PYTHONUNBUFFERED="1"
+. "D:\01 WORK\260605 nemotron virtual survey2\set_api_key.ps1" | Out-Null
+cd "D:\01 WORK\260605 nemotron virtual survey2"
+py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_sample.jsonl `
+   --out output/responses_phase2.jsonl --phase all --workers 1 --min-interval 240.0
+```
+- `--phase all`로 Q14~Q30 추가 수집. **parse_aggregate에 Q14~Q30 집계 로직 추가 필요**(현재 phase1 전용).
+- 응답이 더 길어 호출당 토큰↑ → 일일토큰 천장에 더 빨리 닿을 수 있음. 실측 헤더 보며 페이싱 조정.
+
+## ⚡ 회사에서 이어하기 (fresh clone일 때만)
 1. clone 후 **`set_api_key.ps1` 직접 생성**: `set_api_key.example.ps1` 복사 → `PUT_KEY_HERE`에 Cerebras 키 입력. (실제 키 파일은 gitignore라 repo에 없음.)
-2. `data/`(원본 1.9GB)는 **없어도 보충/집계 가능** — 필요한 페르소나는 `output/personas_*.jsonl`에 내장됨. (재표집할 때만 HF에서 재다운로드.)
-3. **현재 진행: 348명 성공, R3 보충 잔여 194명.** 저녁/회사에서 보충 재개 명령(아래 ★표본 축소 섹션) 실행 → resume으로 이어감. Free tier는 호출당 ~9분(540s) 페이싱 필수.
-4. 보충 197건 다 차면 `py survey/parse_aggregate.py` → 사후가중 집계(n≈542).
+2. `data/`·`DATASET/`(원본 1.9GB)는 **없어도 집계/2차 가능** — 필요한 페르소나는 `output/personas_*.jsonl`에 내장됨. (재표집할 때만 HF에서 재다운로드.)
+3. 1차는 완료됨. 재집계만 하려면 `py survey/parse_aggregate.py`. 2차는 위 ➡️ 섹션 명령 실행.
+
+## 진행상황 모니터링 (현재 진척 확인 스니펫)
+```powershell
+py -c "import json; tu=set(json.loads(l)['persona']['uuid'] for l in open('output/personas_topup_r3.jsonl',encoding='utf-8')); rs=[json.loads(l) for l in open('output/responses_phase1.jsonl',encoding='utf-8')]; bu={}; [bu.__setitem__(r['uuid'],r) for r in rs if r.get('answers') or r['uuid'] not in bu]; s=set(u for u,r in bu.items() if r.get('answers')); print('전체성공',len(s),'| topup',len(tu&s),'/197 | 잔여',len(tu-s))"
+```
+실시간 쿼터 확인(헤더): `c.chat.completions.with_raw_response.create(...).headers['x-ratelimit-remaining-tokens-day']` (truststore inject 후). 일일토큰 1M이 유일 병목.
 
 ## 한 줄 요약
 Nemotron-Personas-Korea 페르소나 2000명이 「재난안전 기술 대국민 인식조사」 Q1~Q13에 zai-glm-4.7로 1인칭 응답 → 가중 집계·리포트. **1차(Q1~Q13) 본 실행 단계.**
@@ -55,8 +83,10 @@ py survey/parse_aggregate.py
 주의: `python`은 WindowsApps 스텁이라 작동X → **`py`** 사용. 콘솔 한글 깨지면 위 chcp/PYTHONUTF8 필요.
 
 ## 현재 상태 / 다음 할 일
-- [중단·보완전환] 2026-06-04. 재개 실행 중 429 rate-limit 급증(하드실패 uuid 27→136) → 사용자 요청으로 **340/2000명에서 중단**. 400 목표는 다음으로 미룸.
-- [실패 보완 중단] 느린 페이스(workers4/interval6.0)로도 429 거의 전부 실패 → 쿼터 소모 판단해 중단. **현재 345명 성공.**
+- [2026-06-05 16:53 중단] **전체 성공 449명, topup 104/197 (잔여 93).** 240초 페이싱·workers1로 안정 진행(att=1 대부분, 실패 0) 중 사용자 요청으로 일시중단, 내일 재개 예정. 위 ⚡⚡ 명령으로 재개.
+- [TLS 해결] 회사망 self-signed CA 차단 → truststore 주입으로 해결(run_survey.py 커밋됨). 이게 오늘의 핵심 트러블.
+- [실측 쿼터] 일일토큰 버킷이 가정보다 여유 있음(오늘 실패호출들은 TLS단에서 막혀 토큰 0 소비). 13:01에 547K → 16:57에 951K로 회복 관측 = 충전/부분리셋. 300초로도 막판 외엔 429 거의 없음.
+- [구버전 메모] 2026-06-04: 540초 시절 429 급증으로 340/345명에서 중단했던 기록(아래). 그 원인의 일부는 사실 TLS였을 가능성 — 회사망 기준으론 truststore가 진짜 해결책.
 
 ## ★Cerebras rate-limit 확정 (2026-06-04, 공식문서 inference-docs.cerebras.ai/support/rate-limits)
 실측 대시보드(Personal, zai-glm-4.7) — **Requests: 분5 / 시간150 / 일2,400.  Tokens: 분30K / 시간1M / 일1M.  Max context 64,000.**

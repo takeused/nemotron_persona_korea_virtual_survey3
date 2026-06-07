@@ -2,6 +2,13 @@
 import argparse, json, os, sys, threading, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# 사내/프록시 TLS 가로채기(self-signed CA) 환경 대응: OS 인증서 저장소 사용
+try:
+    import truststore
+    truststore.inject_into_ssl()
+except Exception:
+    pass
+
 from build_prompt import build_messages
 from validate import validate_response
 from survey_schema import get_llm_questions, PHASE1_QIDS

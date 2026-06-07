@@ -3,6 +3,7 @@ set_api_key.ps1
 
 # 원본 데이터셋(~1.9GB): HuggingFace에서 별도 다운로드
 /data/
+/DATASET/
 
 # 임시/스크래치 산출물
 output/_*.jsonl
