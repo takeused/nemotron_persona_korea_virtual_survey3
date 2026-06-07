@@ -11,7 +11,7 @@ except Exception:
 
 from build_prompt import build_messages
 from validate import validate_response
-from survey_schema import get_llm_questions, PHASE1_QIDS
+from survey_schema import get_llm_questions, PHASE1_QIDS, PHASE2_QIDS
 
 CEREBRAS_BASE = "https://api.cerebras.ai/v1"
 _write_lock = threading.Lock()
@@ -115,7 +115,7 @@ def main():
     ap.add_argument("--out", required=True, help="응답 저장 jsonl (이어쓰기/체크포인트)")
     ap.add_argument("--limit", type=int, default=0, help="처리 개수 제한(0=전체)")
     ap.add_argument("--workers", type=int, default=8)
-    ap.add_argument("--phase", default="phase1", choices=["phase1", "all"], help="응답 대상 문항 범위")
+    ap.add_argument("--phase", default="phase1", choices=["phase1", "phase2", "all"], help="응답 대상 문항 범위")
     ap.add_argument("--max-tokens", type=int, default=4000, help="추론모델은 넉넉히 필요")
     ap.add_argument("--reasoning-effort", default=None, help="gpt-oss 전용: low/medium/high (GLM 미지원)")
     ap.add_argument("--min-interval", type=float, default=4.0,
@@ -127,7 +127,8 @@ def main():
     _limiter = RateLimiter(args.min_interval)
     print(f"호출 페이싱: {args.min_interval}s 간격(≈{60/args.min_interval:.0f} RPM 상한), max_retry={args.max_retry}")
 
-    questions = get_llm_questions(PHASE1_QIDS if args.phase == "phase1" else None)
+    _phase_map = {"phase1": PHASE1_QIDS, "phase2": PHASE2_QIDS, "all": None}
+    questions = get_llm_questions(_phase_map[args.phase])
     print(f"문항 범위: {args.phase} ({len(questions)}문항: {[q['id'] for q in questions]})")
 
     recs = [json.loads(l) for l in open(args.personas, encoding="utf-8")]

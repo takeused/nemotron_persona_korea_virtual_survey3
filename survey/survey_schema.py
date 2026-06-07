@@ -165,6 +165,8 @@ QUESTION_BY_ID = {q["id"]: q for q in QUESTIONS}
 
 # 단계별 LLM 응답 대상 문항
 PHASE1_QIDS = ["Q5", "Q6", "Q7", "Q8", "Q9", "Q10", "Q11", "Q12", "Q13"]
+# 2차: 나머지 전체(Q14~Q30, 분기 Q29_1/Q29_2 포함)
+PHASE2_QIDS = [q["id"] for q in LLM_QUESTIONS if q["id"] not in PHASE1_QIDS]
 
 
 def get_llm_questions(qids=None):
