@@ -1,6 +1,6 @@
 # 진행상황 인수인계 (PROGRESS)
 
-마지막 업데이트: 2026-06-08 (★1차 Q5~Q13 전량 완료 — n=542 집계·리포트 생성)
+마지막 업데이트: 2026-06-08 (★2차 Q14~Q30 진행 중 — 86/542, 내일 재개)
 
 ## ✅✅ 1차(Q1~Q13) 완료 — 현재 상태
 - **전체 성공 542명 / topup 197·197 완료 (잔여 0, 실패 0).** 170개 층 전부 충족, 성공자 전원 9문항(Q5~Q13) 누락 0. 목표 n≈542 정확히 달성.
@@ -14,16 +14,19 @@
 - ★ **백그라운드 프로세스는 세션 env 상속 안 함** → 키를 명령 환경에 직접 넣거나 점-소싱 먼저.
 - ★ **굳이 멈출 땐 run_survey 프로세스만** 종료: `Get-CimInstance Win32_Process -Filter "Name='python.exe'" | ? { $_.CommandLine -like '*run_survey*' } | % { Stop-Process -Id $_.ProcessId -Force }` (다른 python(예: http.server 3737)은 건드리지 말 것.)
 
-## ➡️ 다음 단계: 2차 Q14~Q30
+## ⚡⚡ 2차(Q14~Q30) 재개 — 바로 이 명령 (2026-06-08 중단지점)
 ```powershell
 chcp 65001 > $null; $env:PYTHONUTF8="1"; $env:PYTHONUNBUFFERED="1"
 . "D:\01 WORK\260605 nemotron virtual survey2\set_api_key.ps1" | Out-Null
 cd "D:\01 WORK\260605 nemotron virtual survey2"
-py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_sample.jsonl `
-   --out output/responses_phase2.jsonl --phase all --workers 1 --min-interval 240.0
+py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl `
+   --out output/responses_phase2.jsonl --phase phase2 --workers 1 --min-interval 300.0
 ```
-- `--phase all`로 Q14~Q30 추가 수집. **parse_aggregate에 Q14~Q30 집계 로직 추가 필요**(현재 phase1 전용).
-- 응답이 더 길어 호출당 토큰↑ → 일일토큰 천장에 더 빨리 닿을 수 있음. 실측 헤더 보며 페이싱 조정.
+- **현재 상태: phase2 성공 86 / 542 (잔여 456).** resume이라 위 명령 재실행하면 이어감.
+- ★ **phase2 = Q14~Q30 (19문항, matrix·branch·open 포함).** `--phase phase2` 옵션 신설(코드 커밋됨). 대상은 1차 완료 542명과 동일(`personas_phase2.jsonl`) → Q5~Q30 일관.
+- ★ **코드는 새 문항타입 전부 처리 검증됨**(validate/build_prompt). 스모크 테스트 OK.
+- ★ **호출당 토큰 ~9K(1차 6.5K보다 무거움)** → 일일토큰 1M/일 천장에 더 빨리 닿음. 542×9K≈4.9M → **완료까지 약 5일**(페이싱 무관, 토큰 충전속도가 한계). 300초로 진행 중, 막판 버킷 바닥나면 429는 resume이 흡수.
+- ⚠ **2차 집계는 아직 미구현:** `parse_aggregate.py`는 phase1(Q5~Q13) 전용. Q14~Q30 수집 완료 후 **집계·리포트 로직 추가 필요**(matrix5/branch/open 표 포함).
 
 ## ⚡ 회사에서 이어하기 (fresh clone일 때만)
 1. clone 후 **`set_api_key.ps1` 직접 생성**: `set_api_key.example.ps1` 복사 → `PUT_KEY_HERE`에 Cerebras 키 입력. (실제 키 파일은 gitignore라 repo에 없음.)
