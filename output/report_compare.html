@@ -1,0 +1,144 @@
+<!doctype html><meta charset=utf-8>
+<title>실제 대국민조사 vs Nemotron 가상조사 — 비교·분석 리포트</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1040px;margin:24px auto;color:#222;padding:0 18px;line-height:1.55}
+h1{border-bottom:3px solid #1a5;padding-bottom:8px}
+h2{border-bottom:2px solid #444;margin-top:34px;padding-top:6px}
+h3{margin-top:22px;color:#1a3c6e}
+table{border-collapse:collapse;margin:10px 0 22px;width:100%}
+th,td{border:1px solid #ddd;padding:6px 9px;font-size:13.5px;vertical-align:top}
+th{background:#f3f4f6}
+.n{text-align:right;font-variant-numeric:tabular-nums}
+.real{background:#eef6ff}.virt{background:#fff5ec}
+.note{background:#fff8e1;padding:10px 14px;border-left:4px solid #fb0;font-size:13px}
+.warn{background:#fdecea;padding:12px 16px;border-left:4px solid #e53935;font-size:13.5px;margin:14px 0}
+.key{background:#e8f5e9;padding:12px 16px;border-left:4px solid #2e7d32;font-size:13.5px;margin:14px 0}
+.match{color:#2e7d32;font-weight:bold}.gap{color:#c62828;font-weight:bold}.mid{color:#e68a00;font-weight:bold}
+small{color:#888}
+ul{margin:6px 0 14px}li{margin:4px 0}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;color:#fff;margin-right:5px}
+.t-match{background:#2e7d32}.t-gap{background:#c62828}.t-mid{background:#e68a00}
+</style>
+
+<h1>실제 대국민조사 vs Nemotron 가상 설문조사 — 비교·분석 리포트</h1>
+<div class=note>
+<b>비교 대상</b><br>
+① <b>실제 조사</b>: 「재난안전기술 대국민 인식조사」(국립재난안전연구원 등) — 전국 만 19~69세 1,023명, 구조화 질문지 온라인 조사(2025.08.18~09.05), 95% 신뢰수준 ±3.06%p<br>
+② <b>가상 조사</b>: NVIDIA Nemotron-Personas-Korea 합성 페르소나 542명에게 동일 문항(Q5~Q30)을 zai-glm-4.7 LLM이 1인칭 응답 → 동일한 사후층화 가중치 적용<br>
+※ 두 조사 모두 동일 설문지·동일 모집단(2025년 주민등록인구)·동일 가중 방식. 따라서 <b>차이의 원인은 "응답 주체(실제 인간 vs LLM 페르소나)"로 귀속</b>됩니다.
+</div>
+
+<div class=warn>
+<b>한 줄 결론</b> — 가상조사는 <b>평균적 태도·정보경로·인지수준 등 "분포의 중심"은 실제와 상당히 근접</b>하게 재현했으나,
+<b>① 응답 분산이 극단적으로 축소(소수의견 소멸)</b>되고 <b>② 최신 사건 기억·자기지역 낙관편향 등 "인간 특유의 인지"를 재현하지 못했으며</b>
+<b>③ 긍정·모범답안 방향으로 체계적 쏠림</b>이 관찰되었습니다.
+</div>
+
+<h2>0. 표본 구성 비교 — 가장 근본적인 차이</h2>
+<table>
+<tr><th>구분</th><th class=real>실제 조사 (가중후)</th><th class=virt>가상 조사 (가중후)</th><th>해석</th></tr>
+<tr><td>표본 수</td><td class="real n">1,023명</td><td class="virt n">542명</td><td>둘 다 통계적 분석 가능 규모</td></tr>
+<tr><td>성·연령·지역</td><td class=real>모집단 일치(가중)</td><td class=virt>모집단 일치(가중)</td><td class=match>동일 — 비교 가능</td></tr>
+<tr><td>학력: 고졸 이하</td><td class="real n">11.3%</td><td class="virt n">50.0%</td><td rowspan=3>학력은 층화변수가 아니어서 가중 후에도 차이가 남.<br>실제=온라인패널 <b>고학력 자기선택 편향</b>,<br>가상=Nemotron의 <b>실제 인구 자연분포(저학력 다수)</b>.<br><span class=gap>→ 학력 연동 문항 차이의 근원</span></td></tr>
+<tr><td>　대학교 졸업</td><td class="real n">71.9%</td><td class="virt n">45.0%</td></tr>
+<tr><td>　대학원 졸업</td><td class="real n">16.8%</td><td class="virt n">5.0%</td></tr>
+</table>
+
+<h2>1. 재난 인식 (II)</h2>
+<table>
+<tr><th>문항</th><th class=real>실제 조사</th><th class=virt>가상 조사</th><th>판정</th></tr>
+<tr><td>Q5 평소 관심도 (평균/관심%)</td><td class=real>4.1 / 80.7%</td><td class=virt>3.92 / 83.4%</td><td><span class="tag t-match">근접</span></td></tr>
+<tr><td>Q6 문제 심각성 (평균/심각%)</td><td class=real>4.0 / 79.7%</td><td class=virt>4.02 / <b>99.6%</b></td><td><span class="tag t-mid">평균일치·분산소멸</span></td></tr>
+<tr><td>Q7 2024 가장 심각 재난 (1위)</td><td class=real><b>제주항공 참사 38.2%</b><br>→ 9월고온 13.8 / LPG 11.3</td><td class=virt><b>전기차화재 51.9%</b><br>→ 아리셀 20.5 / 제주항공 <b>5.7</b></td><td><span class="tag t-gap">불일치</span></td></tr>
+<tr><td>Q8 위험 자연재난 (1위)</td><td class=real>태풍 29.0 / 호우 23.4 / 홍수 17.8 / 폭염 15.2</td><td class=virt>태풍 47.1 / 폭염 38.6 / 호우 8.2</td><td><span class="tag t-mid">상위겹침·쏠림</span></td></tr>
+<tr><td>Q9 위험 사회재난 (1위)</td><td class=real><b>감염병 41.6</b> / 산불 13.9 / 도로교통 9.2</td><td class=virt><b>화재 73.4</b> / 감염병 8.3 / 도로교통 6.8</td><td><span class="tag t-gap">불일치</span></td></tr>
+<tr><td>Q10 위험 안전사고 (1위)</td><td class=real><b>범죄 22.4</b> / 전기가스 22.2 / 산재 14.6</td><td class=virt><b>승강기 51.0</b> / 산재 21.4 / 전기가스 10.2</td><td><span class="tag t-gap">불일치</span></td></tr>
+<tr><td>Q11 전체 위험재난 (1위)</td><td class=real>감염병 13.4 / 폭염 11.5 / 호우 10.8 / 태풍 10.3</td><td class=virt>화재 58.5 / 태풍 12.7 / 산재 6.4</td><td><span class="tag t-gap">불일치·쏠림</span></td></tr>
+<tr><td>Q12 위험 판단기준 (1위)</td><td class=real>인명피해 <b>62.9</b> / 피해범위 12.7 / 지속성 9.2</td><td class=virt>인명피해 <b>100.0</b></td><td><span class="tag t-gap">분산 완전소멸</span></td></tr>
+<tr><td>Q13 인식 영향요인 (1위)</td><td class=real>뉴스미디어 <b>64.8</b> / 개인경험 20.6 / 정부 11.5</td><td class=virt>뉴스미디어 <b>96.8</b> / 개인경험 1.7</td><td><span class="tag t-mid">방향일치·쏠림</span></td></tr>
+</table>
+
+<h2>2. 재난안전 과학기술 인식 (III)</h2>
+<table>
+<tr><th>문항</th><th class=real>실제 조사</th><th class=virt>가상 조사</th><th>판정</th></tr>
+<tr><td>Q14 R&amp;D 인지도 (평균/안다%)</td><td class=real>2.7 / 안다 16.9% / 모른다 39.6%</td><td class=virt>2.12 / 안다 4.1% / 모른다 84.2%</td><td><span class="tag t-mid">방향일치(낮음)</span></td></tr>
+<tr><td>Q15 정보 접근경로 (1위)</td><td class=real>TV·라디오 48.6 / 뉴스포털 27.9 / SNS 15.1</td><td class=virt>TV·라디오 55.0 / 뉴스포털 31.1 / SNS 13.7</td><td><span class="tag t-match">거의 일치</span></td></tr>
+<tr><td>Q16 현 기술 해결가능 (평균/가능%)</td><td class=real>3.4 / 47.4%</td><td class=virt>3.03 / <b>3.1%</b> (96.8% 보통)</td><td><span class="tag t-mid">평균근접·분산소멸</span></td></tr>
+<tr><td>Q17 R&amp;D 중요도 (평균)</td><td class=real>4.1~4.2</td><td class=virt><b>4.73~4.84</b></td><td><span class="tag t-mid">긍정 과대</span></td></tr>
+<tr><td>Q18 R&amp;D 효과성 (평균)</td><td class=real>3.7~3.8</td><td class=virt>3.72~3.81</td><td><span class="tag t-match">거의 일치</span></td></tr>
+<tr><td>Q19 R&amp;D 투자필요 (평균)</td><td class=real>4.1~4.2</td><td class=virt><b>4.69~4.74</b></td><td><span class="tag t-mid">긍정 과대</span></td></tr>
+<tr><td>Q20 실생활 활용도 (평균/그렇다%)</td><td class=real>3.2 / 35.5%</td><td class=virt>2.96 / 6.4%</td><td><span class="tag t-mid">방향일치·분산축소</span></td></tr>
+<tr><td>Q21 사용 의향 (그렇다%)</td><td class=real>87.7%</td><td class=virt>99.3%</td><td><span class="tag t-match">방향일치</span></td></tr>
+<tr><td>Q22 효과성 핵심요소 (1위)</td><td class=real>기술접근성·보급 <b>43.6</b> / 연구개발 23.1 / 협력 19.7 / 법제도 13.2</td><td class=virt>기술접근성·보급 <b>86.9</b> / 연구개발 10.2</td><td><span class="tag t-mid">방향일치·쏠림</span></td></tr>
+<tr><td>Q23 과기 기여 자연재난 (1위)</td><td class=real>태풍 18.2 / 호우 16.8 / 홍수 15.4 / 지반침하 11.4</td><td class=virt>태풍 66.5 / 호우 19.4 / 산사태 6.4</td><td><span class="tag t-mid">상위겹침·쏠림</span></td></tr>
+<tr><td>Q24 과기 기여 사회재난 (1위)</td><td class=real><b>감염병 48.8</b> / 도로교통 10.5 / 가축전염병 8.3</td><td class=virt>감염병 40.3 / <b>화재 39.1</b> / 사이버 6.6</td><td><span class="tag t-mid">1위겹침·화재과대</span></td></tr>
+<tr><td>Q25 과기 기여 안전사고 (1위)</td><td class=real>전기가스 25.8 / 승강기 14.8 / 산재 13.4</td><td class=virt>승강기 61.2 / 산재 19.5 / 전기가스 11.5</td><td><span class="tag t-gap">순위역전·쏠림</span></td></tr>
+<tr><td>Q26 과기 기여 전체 (1위)</td><td class=real>감염병 16.9 / 태풍 6.4 / 사이버 5.2</td><td class=virt>화재 29.1 / 감염병 26.8 / 태풍 16.1</td><td><span class="tag t-mid">상위겹침·쏠림</span></td></tr>
+<tr><td>Q27 기여 관리단계 (1위)</td><td class=real>예측·예방 <b>55.6</b> / 대비 21.2 / 대응 18.3</td><td class=virt>예측·예방 <b>99.4</b></td><td><span class="tag t-gap">분산 완전소멸</span></td></tr>
+</table>
+
+<h2>3. 지역별 재난안전 환경 (IV)</h2>
+<table>
+<tr><th>문항</th><th class=real>실제 조사</th><th class=virt>가상 조사</th><th>판정</th></tr>
+<tr><td>Q28 거주지 안전성 (평균/안전%)</td><td class=real>3.4 / 45.0%</td><td class=virt>3.49 / 49.2%</td><td><span class="tag t-match">근접</span></td></tr>
+<tr><td>Q29 타지역 대비 안전 (예%)</td><td class=real><b>72.5%</b> 예</td><td class=virt><b>48.8%</b> 예</td><td><span class="tag t-gap">낙관편향 미재현</span></td></tr>
+<tr><td>Q29-1 안전 느끼는 유형 (1위)</td><td class=real>풍수해 23.6 / 기상 15.5 / 산업 9.4</td><td class=virt>해양재난 61.2 / 기타 14.9 / 지질 9.0</td><td><span class="tag t-gap">불일치·쏠림</span></td></tr>
+<tr><td>Q29-2 위험 느끼는 유형 (1위)</td><td class=real>기상 12.3 / 풍수해 12.3 / 치안 11.1</td><td class=virt>화재폭발 34.2 / 풍수해 29.2 / 교통 8.0</td><td><span class="tag t-mid">풍수해 겹침</span></td></tr>
+<tr><td>Q30 잠재 위험요인 (자유응답 상위)</td><td class=real>불특정범죄 18.4 / 이상기후 11.9 / 치안·테러 9.3 / 사회적고립 9.2 / 사이버 6.3</td><td class=virt>기후변화·이상기후(최다) / 사이버·보이스피싱 / 범죄 / 시설노후화 / 고령화</td><td><span class="tag t-match">주제 광범위 겹침</span></td></tr>
+</table>
+
+<h2>4. 차이의 원인 분석 — 6가지 메커니즘</h2>
+
+<div class=key><b>① 응답 분산의 극단적 축소 (Mode-seeking / 소수의견 소멸)</b><br>
+가장 두드러진 패턴. LLM은 페르소나가 달라도 "가장 그럴듯한 단일 답"으로 수렴한다(temperature 0.7로도 다양성 부족).
+<ul>
+<li>Q12 인명피해: 실제 62.9% → 가상 <b>100%</b> (나머지 5개 기준 완전 소멸)</li>
+<li>Q27 예측·예방: 실제 55.6% → 가상 <b>99.4%</b></li>
+<li>Q6 심각성·Q16 해결가능: 실제는 1~5점에 퍼지나, 가상은 한 점(보통/심각)에 96~99% 집중</li>
+</ul>
+→ 실제 인간 집단의 <b>의견 다양성·꼬리분포(소수 의견)를 재현하지 못함</b>. 평균은 맞아도 분포 모양이 다르다.</div>
+
+<div class=key><b>② 최신 사건 기억의 부재·왜곡 (지식 컷오프 / 환각)</b><br>
+Q7에서 실제 1위 '제주항공 참사'(2024.12)는 가상에서 5.7%로 추락하고, '전기차 화재'가 51.9%로 1위가 됨.
+LLM은 페르소나의 실제 체험·기억이 없고, 학습 컷오프 이후의 충격적 사건에 인간처럼 가중치를 두지 못한다.
+→ <b>"가장 최근·가장 충격적 사건"에 대한 인간의 회상 편향(recency/salience)을 재현하지 못함.</b></div>
+
+<div class=key><b>③ 코드표 상의 직관적·전형적 항목 쏠림</b><br>
+Q9(사회재난)에서 실제 1위 '감염병'(코로나 경험 기반)이 가상에서는 '화재' 73%에 압도됨. Q10도 '범죄'→'승강기'로 역전.
+LLM은 정서적·경험적 무게보다 <b>"재난=화재·승강기" 같은 전형적 연상</b>에 끌린다.
+→ 인간의 <b>집합적 트라우마(팬데믹)·뉴스 노출에 의한 위험 가중</b>을 과소반영.</div>
+
+<div class=key><b>④ 자기지역 낙관편향(home bias)의 미재현</b><br>
+Q29에서 실제 응답자는 72.5%가 "내 지역이 더 안전"이라 답하는 강한 낙관편향을 보이나, 가상은 48.8%로 거의 중립(50:50).
+LLM은 자기 거주지에 대한 <b>인간 특유의 정서적 방어·낙관</b>을 갖지 않고 균형 잡힌 판단을 한다.
+→ 태도형 문항에서 <b>인간의 동기적 편향(motivated reasoning)을 결여.</b></div>
+
+<div class=key><b>⑤ 사회적 바람직성·긍정 동의 편향 (Acquiescence)</b><br>
+R&amp;D 중요성(Q17)·투자필요성(Q19)에서 가상은 4.7~4.8로, 실제(4.1~4.2)보다 체계적으로 높다.
+LLM은 "중요한가/필요한가"류 문항에 <b>더 강하게 동의하는 경향</b>이 있다.
+→ 정책 지지·규범적 문항에서 <b>지지율을 과대추정</b>할 위험.</div>
+
+<div class=key><b>⑥ 표본 구성(학력)의 구조적 차이</b><br>
+실제는 온라인패널 특성상 대졸+ 88.7%인 반면, 가상은 Nemotron 자연분포로 고졸이하 50%.
+학력은 층화·가중 변수가 아니라 이 차이가 가중 후에도 남아, 학력 연동 문항(기술 인지도·정보탐색 등)에 일부 영향.
+→ 단, 본 조사의 <b>주요 차이는 학력보다 ①~⑤의 "LLM 응답 특성"에서 기인</b>.</div>
+
+<h2>5. 종합 평가 — 무엇을 신뢰할 수 있나</h2>
+<table>
+<tr><th>활용 목적</th><th>가상조사 신뢰도</th><th>근거</th></tr>
+<tr><td><b>전반적 태도·평균 수준</b> 파악<br>(관심도·효과성·안전성·인지도)</td><td class=match>높음 ✔</td><td>Q5·Q14·Q18·Q28·Q15가 실제와 근접. 분포 중심은 잘 재현</td></tr>
+<tr><td><b>상위 우선순위 항목</b> 식별<br>(정보경로·기여단계 방향)</td><td class=mid>중간 △</td><td>1~2위 항목은 자주 겹치나 비율이 과장됨. 순위는 참고 가능, 수치는 불가</td></tr>
+<tr><td><b>의견 분포·소수의견·하위집단 차이</b></td><td class=gap>낮음 ✘</td><td>분산이 소멸해 다양성·꼬리분포·집단 간 미세차이 신뢰 불가</td></tr>
+<tr><td><b>최신 사건 관련 응답</b> (Q7 등)</td><td class=gap>낮음 ✘</td><td>지식 컷오프·기억 부재로 실제와 1위가 뒤바뀜</td></tr>
+<tr><td><b>태도형 편향 문항</b> (자기지역·정책지지)</td><td class=gap>낮음 ✘</td><td>인간 특유의 낙관·동의 편향을 재현/과대</td></tr>
+</table>
+
+<div class=warn>
+<b>결론 및 시사점</b><br>
+Nemotron 가상 설문은 <b>"여론의 평균적 무게중심"을 빠르고 저렴하게 근사</b>하는 데에는 유효하다(Q15·Q18·Q28 등 다수 항목이 ±0.1~0.3 이내로 일치).
+그러나 <b>① 의견의 다양성, ② 최신 사건 인지, ③ 인간 특유의 인지편향</b>이 결정적인 문항에서는 실제와 체계적으로 어긋난다.
+따라서 가상조사는 <b>실제 설문의 대체재가 아니라, 사전 파일럿·문항 검증·가설 생성·저비용 1차 스캐닝용 보완재</b>로 활용하는 것이 적절하다.
+정량적 의사결정(예: 정책 지지율, 우선순위 예산배분)에는 반드시 실제 조사로 검증이 필요하다.
+</div>
+
+<p><small>생성: 가상조사 데이터 output/report_all.html · 실제조사 survey_ref/대국민조사리포트.pdf(제7장) 기준. 가상측 수치는 동일 사후층화 가중치 적용 후 산출.</small></p>
