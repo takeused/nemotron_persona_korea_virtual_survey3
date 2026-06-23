@@ -1,6 +1,6 @@
 # 진행상황 인수인계 (PROGRESS)
 
-마지막 업데이트: 2026-06-22 (★2차 Q14~Q30 진행 중 — 530/542 고유 완료, 사용자 요청으로 중단)
+마지막 업데이트: 2026-06-23 (★★2차 Q14~Q30 수집 완료 542/542 + 집계·리포트 생성 완료)
 
 ## ✅✅ 1차(Q1~Q13) 완료 — 현재 상태
 - **전체 성공 542명 / topup 197·197 완료 (잔여 0, 실패 0).** 170개 층 전부 충족, 성공자 전원 9문항(Q5~Q13) 누락 0. 목표 n≈542 정확히 달성.
@@ -22,7 +22,10 @@ cd "D:\01 WORK\260605 nemotron virtual survey2"
 py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl `
    --out output/responses_phase2.jsonl --phase phase2 --workers 1 --min-interval 240.0
 ```
-- **현재 상태: phase2 고유 완료 530 / 542 (잔여 12). 실패 8건(토큰소진 429).** resume이라 위 명령 재실행하면 이어감(실패 8건도 자동 재시도). 거의 완료 — 12명만 더 하면 끝.
+- **현재 상태: phase2 고유 완료 542 / 542 (전량 완료, 실패 0).** 수집 종료.
+- ✅ **2차 집계·리포트 구현 완료:** `survey/parse_aggregate_phase2.py` 신설. matrix5(Q17~19)·branch(Q29)·분기종속(Q29_1/2)·open(Q30 키워드+표본) 전용 빌더 추가, 공용 헬퍼는 parse_aggregate에서 import.
+  - 실행: `chcp 65001 > $null; $env:PYTHONUTF8="1"; py survey/parse_aggregate_phase2.py`
+  - 산출물: `output/responses_phase2.csv`(542행), `output/report_phase2.html`(사후가중 집계 + Borda + 교차분석 + Q30 자유응답).
 - ★ **phase2 = Q14~Q30 (19문항, matrix·branch·open 포함).** `--phase phase2` 옵션 신설(코드 커밋됨). 대상은 1차 완료 542명과 동일(`personas_phase2.jsonl`) → Q5~Q30 일관.
 - ★ **코드는 새 문항타입 전부 처리 검증됨**(validate/build_prompt). 스모크 테스트 OK.
 - ★ **호출당 토큰 ~9K(1차 6.5K보다 무거움)** → 일일토큰 1M/일 천장에 더 빨리 닿음. 542×9K≈4.9M → **완료까지 약 5일**(페이싱 무관, 토큰 충전속도가 한계). 300초로 진행 중, 막판 버킷 바닥나면 429는 resume이 흡수.
