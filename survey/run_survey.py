@@ -9,7 +9,8 @@ try:
 except Exception:
     pass
 
-from build_prompt import build_messages, persona_rng, ELICIT_TYPES, elicit_options, sample_dist
+from build_prompt import (build_messages, persona_rng, persona_traits, ELICIT_TYPES,
+                          elicit_options, sample_dist, style_transform, apply_dk, sample_rank)
 from validate import validate_response
 from survey_schema import get_llm_questions, PHASE1_QIDS, PHASE2_QIDS
 
@@ -60,14 +61,40 @@ def _extract_json(text):
     return json.loads(s)
 
 
-def _sample_elicited(ans, questions, uuid):
-    """elicit 모드: 확률추출 대상 문항의 {보기:확률} 분포를 페르소나 시드로 1개 샘플(검증 전 정수화)."""
+def _num_dict(raw):
+    d = {}
+    for k, v in raw.items():
+        try:
+            d[int(k)] = float(v)
+        except (ValueError, TypeError):
+            pass
+    return d
+
+
+def _sample_elicited(ans, questions, rec):
+    """elicit 모드 후처리(검증 전 정수화):
+      A 확률추출→샘플 / 3 응답스타일 분포변환 / 2 DK주입·새티스파이싱 / 1 순위형 PL샘플."""
+    uuid = rec["persona"]["uuid"]
     rng = persona_rng(uuid, "_sample")
+    tr = persona_traits(rec["persona"], rec.get("demographics"))
     for q in questions:
-        if q["type"] in ELICIT_TYPES and isinstance(ans.get(q["id"]), dict):
-            s = sample_dist(ans[q["id"]], elicit_options(q), rng)
+        qid, t = q["id"], q["type"]
+        v = ans.get(qid)
+        if t in ELICIT_TYPES and isinstance(v, dict):
+            if t in ("scale5", "scale5_dk"):            # 척도: 스타일변환(+DK주입) 후 샘플
+                dd = style_transform(_num_dict(v), tr["style"])
+                if t == "scale5_dk":
+                    dd = apply_dk(dd, tr["dk_weight"])
+                s = sample_dist(dd, elicit_options(q), rng)
+            else:                                        # single/branch: 그대로 샘플
+                s = sample_dist(v, elicit_options(q), rng)
             if s is not None:
-                ans[q["id"]] = s
+                ans[qid] = s
+        elif t == "rank" and isinstance(v, list) and v and isinstance(v[0], (list, dict)):
+            cands = q.get("candidates") or list(q["options"])
+            ans[qid] = sample_rank(v, cands, q["k"], rng)
+        elif t == "matrix5" and tr["low_effort"] and isinstance(v, list) and v:
+            ans[qid] = [v[0]] * len(v)                   # 2 새티스파이싱: 불성실→직선응답
     return ans
 
 
@@ -94,7 +121,7 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
                 raise RuntimeError("빈 content (추론 토큰 초과 추정)")
             ans = _extract_json(content)
             if elicit:
-                ans = _sample_elicited(ans, questions, uuid)
+                ans = _sample_elicited(ans, questions, rec)
             ok, errs = validate_response(ans, questions)
             if ok:
                 return {"uuid": rec["persona"]["uuid"], "demographics": rec["demographics"],

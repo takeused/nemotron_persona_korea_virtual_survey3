@@ -26,6 +26,14 @@
 - ⚠ **기존 responses_*.jsonl은 구식 산물.** 개선판은 새 출력파일로 재수집해야 반영됨(예: `--out output/responses_phase1_v2.jsonl`).
 - 파일럿 스크립트(`pilot_improved*.py`)는 기록용으로 유지(본 실행은 run_survey로 충분).
 
+## ★심화 개선 1·2·3 파이프라인 반영 (2026-06-24, report_compare.html 8절)
+- **1 순위형 확률추출(Plackett–Luce):** elicit을 rank까지 확장. 모델이 상위 6후보를 [코드,가중치]로 출력→`sample_rank`가 무복원 가중표집. Q8·Q9·Q11·Q23~26 1순위 과집중 해소.
+- **2 DK·불성실 주입:** `persona_traits`에 dk_weight(저학력·둔감→Q21 '잘모름' +6~12%)·low_effort(~10%→매트릭스 직선응답). 측정 노이즈 재현.
+- **3 응답스타일 분포변환:** `style_transform`(agree↑/critical↓/mid중앙, 계수0.30)을 elicit 척도분포에 사후 적용. `apply_dk`로 scale5_dk DK주입.
+- **구조:** build_prompt에 `persona_traits`(키 기반 성향)·`style_transform`·`apply_dk`·`sample_rank` 신설. run_survey `_sample_elicited`가 통합 후처리(샘플 전 변환). 검증·집계 다운스트림 무변경.
+- **검증:** 오프라인 단위테스트 전부 통과(방향성·rank유효성·결정론성·validate통과). 라이브 검증은 ★내일 phase2 n=30(토큰 리셋 후)으로 1~6 종합 확정 예정.
+- **계획(미구현):** 4 준지도보정+train/test분할(JS divergence), 5 잠재관여도 재가중, 6 페르소나 내 일관성(프로파일 선생성).
+
 ## ✅✅ 1차(Q1~Q13) 완료 — 현재 상태
 - **전체 성공 542명 / topup 197·197 완료 (잔여 0, 실패 0).** 170개 층 전부 충족, 성공자 전원 9문항(Q5~Q13) 누락 0. 목표 n≈542 정확히 달성.
 - **산출물:** `output/responses_phase1.jsonl`(원본 응답), `output/responses_phase1.csv`(542행), `output/report_phase1.html`(사후가중 집계 + Borda 순위 + 인구통계 교차분석).
