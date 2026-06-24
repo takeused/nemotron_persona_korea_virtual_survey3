@@ -1,5 +1,5 @@
 # 페르소나 1명 → 1인칭 몰입 시스템 프롬프트 + 설문 응답(JSON) 지시 메시지 생성
-import json
+import json, random, hashlib
 from survey_schema import (
     QUESTIONS, LLM_QUESTIONS, get_llm_questions, DISASTER_TYPES, DISASTER_CATEGORY,
     NATURAL, SOCIAL, SAFETY, RND_ITEMS,
@@ -58,6 +58,96 @@ def region_risk(province):
     return (province or "거주지"), "일반 생활안전"
 
 
+# ── B: 잠재 성향 시드 + C: 경험 백스토리 (파일럿 v2 검증 — 전형쏠림·과대긍정 완화) ─────────
+# 인간 응답 이질성 모사: 페르소나별 무작위(uuid 시드)로 태도·경험을 부여. 분포는 현실 근사.
+TRUST = [("정부·전문가를 잘 신뢰하지 않는 편", 0.30), ("정부·전문가를 보통 수준으로 신뢰", 0.50),
+         ("정부·전문가를 비교적 신뢰하는 편", 0.20)]
+SENS = [("위험에 다소 둔감하고 무관심한 편", 0.30), ("위험에 보통 수준으로 반응", 0.40),
+        ("위험에 예민하고 걱정이 많은 편", 0.30)]
+STYLE = [("질문에 비판적이고 까다롭게 답하는 편", 0.30), ("무난하게 중간값으로 답하는 편", 0.40),
+         ("대체로 동의·긍정적으로 답하는 편", 0.30)]
+# ② Q29 낙관편향 대응: 거주지 애착·정주성(실제 72.5%가 자기지역을 더 안전하다 인식 → 애착 우세 분포)
+HOME = [("지금 사는 동네에 애착이 크고, 이 지역이 다른 곳보다 안전하다고 느끼는 편이다", 0.55),
+        ("거주지에 특별한 애착은 없고 안전성도 보통이라고 느낀다", 0.30),
+        ("거주지에 불만이 있고, 다른 곳보다 위험하다고 느끼는 편이다", 0.15)]
+
+
+def persona_rng(uuid, salt=""):
+    h = int(hashlib.md5((uuid + salt).encode()).hexdigest(), 16) % (2**32)
+    return random.Random(h)
+
+
+def _pick(rng, dist):
+    r = rng.random(); c = 0.0
+    for label, p in dist:
+        c += p
+        if r <= c:
+            return label
+    return dist[-1][0]
+
+
+def _backstory(rng, prov, risk):
+    """C: 45%는 재난 경험 있음, 55%는 뉴스로만(현실 반영)."""
+    if rng.random() < 0.55:
+        return "당신은 재난을 직접 크게 겪은 적은 없고, 대부분 뉴스로만 접합니다."
+    return rng.choice([
+        f"당신은 몇 년 전 거주지({prov})에서 {risk.split('·')[0]} 관련 피해를 직접 겪은 적이 있습니다.",
+        "당신은 가족·친지 중에 재난·사고로 피해를 본 사람이 있어 그 일을 또렷이 기억합니다.",
+        "당신은 직장이나 생업 현장에서 안전사고 위험을 가까이에서 느낀 경험이 있습니다.",
+        "당신은 과거 교통사고나 화재를 직접 목격하거나 겪어 그 충격이 남아 있습니다.",
+    ])
+
+
+def latent_block(persona, prov, risk):
+    rng = persona_rng(persona.get("uuid", ""))
+    bits = [_pick(rng, TRUST), _pick(rng, SENS), _pick(rng, STYLE), _pick(rng, HOME),
+            _backstory(rng, prov, risk)]
+    return "당신의 숨은 성향·경험(응답에 자연스럽게 반영하되, 드러내 말하지는 마십시오):\n- " + "\n- ".join(bits)
+
+
+# ── A: 확률추출 대상 유형 + 샘플링 (파일럿 v2 검증 — 분산소멸 해결) ──────────────────────
+ELICIT_TYPES = {"scale5", "scale5_dk", "single", "branch"}
+
+
+def elicit_options(q):
+    """확률추출 대상 문항의 유효 보기 코드 리스트."""
+    t = q["type"]
+    if t == "scale5":
+        return [1, 2, 3, 4, 5]
+    if t == "scale5_dk":
+        return [1, 2, 3, 4, 5, 6]
+    if t == "branch":
+        return [1, 2]
+    if t == "single":
+        return list(q["options"])
+    return []
+
+
+def sample_dist(raw, opts, rng):
+    """모델이 준 {보기:확률}을 정규화 후 1개 샘플. 이미 정수면 그대로 통과."""
+    if isinstance(raw, int) and not isinstance(raw, bool) and raw in opts:
+        return raw
+    if not isinstance(raw, dict):
+        return None
+    d = {}
+    for k, v in raw.items():
+        try:
+            ik, fv = int(k), float(v)
+        except (ValueError, TypeError):
+            continue
+        if ik in opts and fv > 0:
+            d[ik] = fv
+    if not d:
+        return None
+    tot = sum(d.values())
+    r = rng.random(); c = 0.0
+    for k in d:
+        c += d[k] / tot
+        if r <= c:
+            return k
+    return list(d)[-1]
+
+
 SYSTEM_TEMPLATE = """당신은 아래에 묘사된 실제 한국인 한 사람입니다. 이 사람의 정체성, 가치관, 생활환경, 교육수준, 사는 지역에 완전히 몰입하십시오.
 
 == 당신의 정체성 ==
@@ -67,6 +157,9 @@ SYSTEM_TEMPLATE = """당신은 아래에 묘사된 실제 한국인 한 사람�
 당신이 사는 {prov} 지역에서 사람들이 특히 체감하는 위험: {risk}
 
 {events}
+
+== 당신의 성향·경험 ==
+{latent}
 
 == 응답 지침 ==
 - 위 인물 '본인'으로서 1인칭으로 솔직하게 응답합니다. '모범답안'이나 전문가가 선호할 답을 고르려 애쓰지 마십시오.
@@ -144,9 +237,12 @@ def render_survey(questions):
     return "\n".join(parts)
 
 
-def _spec_line(q):
-    """문항 1개의 출력 JSON 형식 한 줄."""
+def _spec_line(q, elicit=False):
+    """문항 1개의 출력 JSON 형식 한 줄. elicit=True면 확률추출 대상 유형은 분포로 요청."""
     qid, t = q["id"], q["type"]
+    if elicit and t in ELICIT_TYPES:
+        codes = "/".join(str(c) for c in elicit_options(q))
+        return f'  "{qid}": {{보기 {codes} 각각의 확률(0~1, 합 1 근사)}}'
     if t == "scale5":
         return f'  "{qid}": 1~5 정수'
     if t == "scale5_dk":
@@ -169,24 +265,28 @@ def _spec_line(q):
     return f'  "{qid}": ...'
 
 
-def render_output_spec(questions):
-    lines = [_spec_line(q) for q in questions]
+def render_output_spec(questions, elicit=False):
+    lines = [_spec_line(q, elicit) for q in questions]
+    extra = ("\n★확률추출 문항은 억지로 한 보기에 1.0을 몰지 말고, 당신의 망설임·이중성을 분포로 드러내십시오(예: 0.6/0.25/0.15)."
+             if elicit else "")
     return ("== 출력 형식 (JSON 객체 하나, 아래 키를 모두 포함) ==\n{\n"
             + ",\n".join(lines)
-            + "\n}\n순위형은 중복 없는 코드로 가장 위험/중요한 순서대로 나열하십시오. JSON 외의 텍스트는 절대 출력하지 마십시오.")
+            + "\n}\n순위형은 중복 없는 코드로 가장 위험/중요한 순서대로 나열하십시오." + extra
+            + " JSON 외의 텍스트는 절대 출력하지 마십시오.")
 
 
-def build_user_static(questions):
-    return render_survey(questions) + "\n\n" + render_output_spec(questions)
+def build_user_static(questions, elicit=False):
+    return render_survey(questions) + "\n\n" + render_output_spec(questions, elicit)
 
 
-def build_messages(persona, demographics, questions=None):
+def build_messages(persona, demographics, questions=None, elicit=False):
     if questions is None:
         questions = LLM_QUESTIONS
     prov, risk = region_risk(persona.get("province", ""))
     sys = SYSTEM_TEMPLATE.format(persona=_persona_block(persona, demographics),
-                                 prov=prov, risk=risk, events=EVENT_BRIEF_2024)
-    user = "아래 설문에 위 인물 본인으로서 응답해 JSON으로만 답하십시오.\n\n" + build_user_static(questions)
+                                 prov=prov, risk=risk, events=EVENT_BRIEF_2024,
+                                 latent=latent_block(persona, prov, risk))
+    user = "아래 설문에 위 인물 본인으로서 응답해 JSON으로만 답하십시오.\n\n" + build_user_static(questions, elicit)
     return [
         {"role": "system", "content": sys},
         {"role": "user", "content": user},

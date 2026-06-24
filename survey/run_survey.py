@@ -9,7 +9,7 @@ try:
 except Exception:
     pass
 
-from build_prompt import build_messages
+from build_prompt import build_messages, persona_rng, ELICIT_TYPES, elicit_options, sample_dist
 from validate import validate_response
 from survey_schema import get_llm_questions, PHASE1_QIDS, PHASE2_QIDS
 
@@ -60,12 +60,25 @@ def _extract_json(text):
     return json.loads(s)
 
 
+def _sample_elicited(ans, questions, uuid):
+    """elicit 모드: 확률추출 대상 문항의 {보기:확률} 분포를 페르소나 시드로 1개 샘플(검증 전 정수화)."""
+    rng = persona_rng(uuid, "_sample")
+    for q in questions:
+        if q["type"] in ELICIT_TYPES and isinstance(ans.get(q["id"]), dict):
+            s = sample_dist(ans[q["id"]], elicit_options(q), rng)
+            if s is not None:
+                ans[q["id"]] = s
+    return ans
+
+
 def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reasoning_effort=None,
-               temperature=0.85, top_p=0.95):
+               temperature=0.85, top_p=0.95, elicit=True):
     """페르소나 1명에 대해 응답 수집. (uuid, demographics, answers, meta) 반환.
     GLM-4.7·gpt-oss는 추론모델 → reasoning은 별도 필드, content엔 최종 JSON. 토큰 넉넉히 필요.
-    temperature 기본 0.85·top_p 0.95: 실제조사 대비 '분산 소멸' 완화(파일럿 검증, 1.0은 긍정편향 과대 → 0.85)."""
-    msgs = build_messages(rec["persona"], rec["demographics"], questions)
+    temperature 기본 0.85·top_p 0.95: 실제조사 대비 '분산 소멸' 완화(파일럿 검증, 1.0은 긍정편향 과대 → 0.85).
+    elicit=True(파일럿 v2): scale/single/branch는 확률분포로 받아 샘플(분산소멸 해결)."""
+    uuid = rec["persona"]["uuid"]
+    msgs = build_messages(rec["persona"], rec["demographics"], questions, elicit=elicit)
     last_err = None
     for attempt in range(1, max_retry + 1):
         try:
@@ -78,6 +91,8 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
             if not content:  # 추론 토큰 초과로 최종응답 미생성
                 raise RuntimeError("빈 content (추론 토큰 초과 추정)")
             ans = _extract_json(content)
+            if elicit:
+                ans = _sample_elicited(ans, questions, uuid)
             ok, errs = validate_response(ans, questions)
             if ok:
                 return {"uuid": rec["persona"]["uuid"], "demographics": rec["demographics"],
@@ -123,6 +138,9 @@ def main():
     ap.add_argument("--temperature", type=float, default=0.85,
                     help="응답 다양성. 0.85 권장(실제조사 대비 분산 소멸 완화, 파일럿 검증). 1.0은 긍정편향 과대")
     ap.add_argument("--top-p", type=float, default=0.95, help="누클리어스 샘플링")
+    ap.add_argument("--elicit", dest="elicit", action="store_true", default=True,
+                    help="확률추출+샘플링(기본 ON, 파일럿 v2 — scale/single/branch 분산소멸 해결)")
+    ap.add_argument("--no-elicit", dest="elicit", action="store_false", help="구식 강제 단일선택")
     ap.add_argument("--min-interval", type=float, default=4.0,
                     help="전역 호출 간격(초). 4.0≈15RPM. Cerebras RPM/TPM 한도 회피용")
     ap.add_argument("--max-retry", type=int, default=6)
@@ -152,7 +170,8 @@ def main():
         futs = {ex.submit(answer_one, client, args.model, r, questions,
                           max_retry=args.max_retry, max_tokens=args.max_tokens,
                           reasoning_effort=args.reasoning_effort,
-                          temperature=args.temperature, top_p=args.top_p): r for r in todo}
+                          temperature=args.temperature, top_p=args.top_p,
+                          elicit=args.elicit): r for r in todo}
         for i, fut in enumerate(as_completed(futs), 1):
             res = fut.result()
             with _write_lock:

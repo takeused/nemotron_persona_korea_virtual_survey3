@@ -18,6 +18,14 @@
 - **결론:** A(확률추출)+B+C 결합이 가장 효과적. 기존 ✘(Q12·Q27·Q9)가 ◎/○로 전환. **잔존 실패=Q29 자기지역 낙관편향(51.9 vs 실제72.5)** — 거주지 애착 프라이어 추가 필요.
 - **다음:** v2 기법을 본 파이프라인에 정식 통합(현재는 별도 파일럿 스크립트) + 전체표본 재수집으로 확정 검증. 보고서 `output/report_compare.html` 7절에 상세.
 
+## ★★★v2 기법 본 파이프라인 정식 통합 완료 (2026-06-24)
+- **build_prompt.py:** SYSTEM_TEMPLATE에 `latent_block`(B 잠재성향: 정부신뢰·위험민감도·응답스타일 + ②거주지 애착(HOME) 프라이어 + C 경험 백스토리) 추가. `ELICIT_TYPES`(scale5/scale5_dk/single/branch)·`elicit_options`·`sample_dist` 신설. `build_messages`/`render_output_spec`/`_spec_line`에 `elicit` 파라미터 — 확률추출 대상은 출력스펙을 {보기:확률}로 요청, rank/matrix/open은 직접 유지.
+- **run_survey.py:** `--elicit` 기본 ON(`--no-elicit`로 구식 강제선택). `_sample_elicited`가 분포→정수 샘플(uuid 시드). 검증·집계 다운스트림은 정수만 받으므로 무변경.
+- **검증:** 1명 엔드투엔드 스모크 OK — Q5/Q6/Q7/Q13(elicit)→정수 샘플, Q8~Q12(rank)→리스트, Q12=[1,4] 분산 발현, validate 통과.
+- ②Q29 낙관편향 대응: HOME 프라이어(애착 우세 0.55)를 latent_block에 포함 → Q29 예% 상향 기대(전체표본 재수집으로 확정 검증 필요).
+- ⚠ **기존 responses_*.jsonl은 구식 산물.** 개선판은 새 출력파일로 재수집해야 반영됨(예: `--out output/responses_phase1_v2.jsonl`).
+- 파일럿 스크립트(`pilot_improved*.py`)는 기록용으로 유지(본 실행은 run_survey로 충분).
+
 ## ✅✅ 1차(Q1~Q13) 완료 — 현재 상태
 - **전체 성공 542명 / topup 197·197 완료 (잔여 0, 실패 0).** 170개 층 전부 충족, 성공자 전원 9문항(Q5~Q13) 누락 0. 목표 n≈542 정확히 달성.
 - **산출물:** `output/responses_phase1.jsonl`(원본 응답), `output/responses_phase1.csv`(542행), `output/report_phase1.html`(사후가중 집계 + Borda 순위 + 인구통계 교차분석).
