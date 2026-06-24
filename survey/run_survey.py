@@ -80,15 +80,17 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
     uuid = rec["persona"]["uuid"]
     msgs = build_messages(rec["persona"], rec["demographics"], questions, elicit=elicit)
     last_err = None
+    cur_max = max_tokens
     for attempt in range(1, max_retry + 1):
         try:
-            kwargs = dict(model=model, messages=msgs, temperature=temperature, top_p=top_p, max_tokens=max_tokens)
+            kwargs = dict(model=model, messages=msgs, temperature=temperature, top_p=top_p, max_tokens=cur_max)
             if reasoning_effort:
                 kwargs["reasoning_effort"] = reasoning_effort
             _limiter.wait()
             resp = client.chat.completions.create(**kwargs)
             content = resp.choices[0].message.content
-            if not content:  # 추론 토큰 초과로 최종응답 미생성
+            if not content:  # 추론 토큰 초과로 최종응답 미생성 → 다음 시도엔 토큰 상향(반복 낭비 방지)
+                cur_max = min(int(cur_max * 1.6), 16000)
                 raise RuntimeError("빈 content (추론 토큰 초과 추정)")
             ans = _extract_json(content)
             if elicit:
@@ -133,7 +135,8 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="처리 개수 제한(0=전체)")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--phase", default="phase1", choices=["phase1", "phase2", "all"], help="응답 대상 문항 범위")
-    ap.add_argument("--max-tokens", type=int, default=4000, help="추론모델은 넉넉히 필요")
+    ap.add_argument("--max-tokens", type=int, default=6000,
+                    help="추론모델은 넉넉히 필요. elicit+다문항(phase all)은 4000 초과 빈content 발생 → 6000+ 권장")
     ap.add_argument("--reasoning-effort", default=None, help="gpt-oss 전용: low/medium/high (GLM 미지원)")
     ap.add_argument("--temperature", type=float, default=0.85,
                     help="응답 다양성. 0.85 권장(실제조사 대비 분산 소멸 완화, 파일럿 검증). 1.0은 긍정편향 과대")
