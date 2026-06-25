@@ -88,7 +88,9 @@ def row(name, real, orig, v2):
 
 
 def main():
-    recs = load(os.path.join(OUT, "responses_validate_v2.jsonl"), os.path.join(OUT, "personas_phase2.jsonl"))
+    import sys
+    fname = sys.argv[1] if len(sys.argv) > 1 else "responses_validate_v2.jsonl"
+    recs = load(os.path.join(OUT, fname), os.path.join(OUT, "personas_phase2.jsonl"))
     w = compute_weights(recs)
     print(f"검증표본 n={len(recs)} (개선 파이프라인 --elicit, 사후가중)\n")
 

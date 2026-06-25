@@ -105,11 +105,14 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
     temperature 기본 0.85·top_p 0.95: 실제조사 대비 '분산 소멸' 완화(파일럿 검증, 1.0은 긍정편향 과대 → 0.85).
     elicit=True(파일럿 v2): scale/single/branch는 확률분포로 받아 샘플(분산소멸 해결)."""
     uuid = rec["persona"]["uuid"]
-    msgs = build_messages(rec["persona"], rec["demographics"], questions, elicit=elicit)
+    base_msgs = build_messages(rec["persona"], rec["demographics"], questions, elicit=elicit)
     last_err = None
+    correction = None       # 검증 실패 시 '단일' 정정 메시지(대화 누적 금지 — 토큰 폭증 방지)
     cur_max = max_tokens
     for attempt in range(1, max_retry + 1):
         try:
+            # 재시도 시 base + 정정 1개만 전송(이전 긴 응답을 누적 echo하지 않음 → 입력 토큰 고정)
+            msgs = base_msgs if not correction else base_msgs + [{"role": "user", "content": correction}]
             kwargs = dict(model=model, messages=msgs, temperature=temperature, top_p=top_p, max_tokens=cur_max)
             if reasoning_effort:
                 kwargs["reasoning_effort"] = reasoning_effort
@@ -117,7 +120,7 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
             resp = client.chat.completions.create(**kwargs)
             content = resp.choices[0].message.content
             if not content:  # 추론 토큰 초과로 최종응답 미생성 → 다음 시도엔 토큰 상향(반복 낭비 방지)
-                cur_max = min(int(cur_max * 1.6), 16000)
+                cur_max = min(int(cur_max * 1.6), 12000)
                 raise RuntimeError("빈 content (추론 토큰 초과 추정)")
             ans = _extract_json(content)
             if elicit:
@@ -127,9 +130,7 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
                 return {"uuid": rec["persona"]["uuid"], "demographics": rec["demographics"],
                         "answers": ans, "model": model, "attempts": attempt}
             last_err = "; ".join(errs[:6])
-            # 검증 실패 → 오류를 알려주고 재요청
-            msgs = msgs + [{"role": "assistant", "content": content},
-                           {"role": "user", "content": f"다음 항목이 잘못되었습니다: {last_err}. 모든 문항을 규칙에 맞게 다시 JSON으로만 답하십시오."}]
+            correction = f"이전 시도에 오류가 있었습니다: {last_err}. 모든 문항을 규칙대로, JSON 객체 하나만 다시 출력하십시오."
         except Exception as e:
             last_err = f"{type(e).__name__}: {e}"
             # 재시도는 다음 루프의 _limiter.wait()가 min_interval만큼 간격을 강제하므로
@@ -173,7 +174,8 @@ def main():
     ap.add_argument("--no-elicit", dest="elicit", action="store_false", help="구식 강제 단일선택")
     ap.add_argument("--min-interval", type=float, default=4.0,
                     help="전역 호출 간격(초). 4.0≈15RPM. Cerebras RPM/TPM 한도 회피용")
-    ap.add_argument("--max-retry", type=int, default=6)
+    ap.add_argument("--max-retry", type=int, default=4,
+                    help="검증실패 재시도 상한. elicit는 실패율↑→토큰낭비 방지 위해 4로 제한(과거 6은 과소비)")
     args = ap.parse_args()
 
     global _limiter
