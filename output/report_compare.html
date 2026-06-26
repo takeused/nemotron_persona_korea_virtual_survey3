@@ -287,4 +287,40 @@ Nemotron 가상 설문은 <b>"여론의 평균적 무게중심"을 빠르고 저
 </ul>
 </div>
 
-<p><small>생성: 가상조사 output/report_all.html · 실제조사 survey_ref/대국민조사리포트.pdf(제7장) · 개선 파일럿 output/pilot_improved.jsonl(v1)·pilot_improved2.jsonl(v2) 기준. 가상측 수치는 동일 사후층화 가중치 적용 후 산출.</small></p>
+<h2>10. 분리수집 통합검증 (n=46) — 분산회복 성공 vs 척도평균 과잉보정</h2>
+<p>심화 개선(순위형 PL·DK/불성실·응답스타일 변환)을 본 파이프라인에 통합한 뒤, <b>phase1·phase2를 분리수집</b>하여 더 큰 표본(n=46, 양 단계 모두 성공한 응답자)으로 통합 검증했다.</p>
+
+<div class=key>
+<b>분리수집 전략의 효과(운영)</b> — phase all(28문항) 단일콜은 검증 실패율이 높아(첫시도 성공 10/30) 재시도가 누적되며 토큰을 폭증시켰다.
+<b>phase1·phase2로 분리하니 첫시도 성공률이 급등</b>(phase1 57/60, phase2 24/32)하여 재시도·토큰낭비가 해소됨. phase1은 60/60 성공·234K 토큰으로 완료.
+</div>
+
+<table>
+<tr><th>문항</th><th class=real>실제</th><th class=virt>기존</th><th><b>통합 v2 (n=46)</b></th><th>판정</th></tr>
+<tr><td>Q27 기여단계 — 예방%</td><td class="real n">55.6</td><td class="virt n">99.4</td><td class=n><b>66.1</b></td><td><span class=match>◎ 분산회복·근접</span></td></tr>
+<tr><td>Q12 판단기준 (엔트로피)</td><td class=real>인명 62.9</td><td class=virt>인명 100 (0)</td><td>분산 (엔트 1.84)</td><td><span class=mid>○ 분산회복·모드분산</span></td></tr>
+<tr><td>Q11 전체 위험재난</td><td class=real>감염병 13.4(평탄)</td><td class=virt>화재 58.5(쏠림)</td><td>도로27/화재17/전기가스16(평탄)</td><td><span class=match>○ 실제처럼 평탄화</span></td></tr>
+<tr><td><b>★Q29 자기지역 안전 예%</b></td><td class="real n">72.5</td><td class="virt n">48.8</td><td class=n><b>61.6</b></td><td><span class=match>◎ 애착 프라이어 작동</span></td></tr>
+<tr><td>Q6 심각성 평균</td><td class="real n">4.0</td><td class="virt n">4.02</td><td class=n><b>3.53</b></td><td><span class=gap>✘ 과잉보정(하락)</span></td></tr>
+<tr><td>Q16 해결가능 평균</td><td class="real n">3.4</td><td class="virt n">3.03</td><td class=n><b>2.76</b></td><td><span class=gap>✘ 과잉보정(하락)</span></td></tr>
+<tr><td>Q28 거주지 안전 평균</td><td class="real n">3.4</td><td class="virt n">3.49</td><td class=n><b>2.95</b></td><td><span class=gap>✘ 과잉보정(하락)</span></td></tr>
+</table>
+
+<div class=warn>
+<b>핵심 발견 — "분산 회복"과 "평균 정확도"의 트레이드오프</b><br>
+순위형 PL·확률추출은 <b>극단적 붕괴(Q12·Q27·Q11)와 Q29 낙관편향을 성공적으로 완화</b>했다.
+그러나 <b>이미 실제와 거의 일치하던 척도 평균(Q6 4.02·Q28 3.49)이 실제 아래로 하락</b>하는 과잉보정이 발생했다.
+원인은 <b>응답스타일 분포변환(critical 하향+mid 중앙수렴, 계수 0.30) + '비위맞추기 금지·무관심' 프롬프트</b>의 하향 압력이 누적되어,
+고첨도 분포에서 상한(5점)이 막혀 <b>정당한 고심각도 합의까지 깎아낸 것</b>이다(하향 비대칭).
+</div>
+
+<div class=key>
+<b>조치 및 다음 단계</b>
+<ul>
+<li><b>즉시 수정(반영됨):</b> style_transform 계수 0.30→0.15·중앙수렴 0.22→0.12로 완화 → 다음 토큰 사이클에 재검증.</li>
+<li><b>추가 튜닝 후보:</b> ⓐ 분포변환을 문항 선택적으로(긍정편향이 실증된 문항에만) 적용, ⓑ anti-people-pleasing 프롬프트 강도 조정, ⓒ Q12 순위형 PL 과분산 점검, ⓓ Q9·Q16·Q29-1/2 모드 불일치.</li>
+<li><b>구조적 교훈:</b> 일괄 하향식 편향교정은 위험하다. 문항별로 "실제 대비 과대/과소"를 측정해 <b>선택적으로 보정(계획 #4 준지도 보정)</b>하는 것이 평균·분산을 동시에 맞추는 정공법이다.</li>
+</ul>
+</div>
+
+<p><small>생성: 가상조사 output/report_all.html · 실제조사 survey_ref/대국민조사리포트.pdf(제7장) · 개선 파일럿 output/pilot_improved.jsonl(v1)·pilot_improved2.jsonl(v2) · 분리수집 검증 output/responses_test60_p1_v2.jsonl·responses_test60_p2_v2.jsonl(n=46) 기준. 가상측 수치는 동일 사후층화 가중치 적용 후 산출.</small></p>
