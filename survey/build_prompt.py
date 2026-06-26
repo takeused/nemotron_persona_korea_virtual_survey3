@@ -176,12 +176,12 @@ def style_transform(dist, style):
     for o, w in dist.items():
         if o == 6:                      # DK는 변환 제외
             out[o] = w; continue
-        if style == "agree":
-            f = _math.exp(0.30 * (o - 3))
+        if style == "agree":            # n=46 검증서 척도평균 과잉하락 확인 → 계수 0.30→0.15로 완화
+            f = _math.exp(0.15 * (o - 3))
         elif style == "critical":
-            f = _math.exp(-0.30 * (o - 3))
+            f = _math.exp(-0.15 * (o - 3))
         else:                           # mid
-            f = _math.exp(-0.22 * (o - 3) ** 2)
+            f = _math.exp(-0.12 * (o - 3) ** 2)
         out[o] = w * f
     return out
 

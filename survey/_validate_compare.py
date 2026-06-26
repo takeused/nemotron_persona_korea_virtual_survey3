@@ -21,19 +21,38 @@ ORIG = {  # 기존 가상(통합 report_all)
 }
 
 
-def load(path, personas):
-    pmap = {json.loads(l)["persona"]["uuid"]: json.loads(l) for l in open(personas, encoding="utf-8")}
+def _best(path):
     best = {}
     for l in open(path, encoding="utf-8"):
         r = json.loads(l); u = r["uuid"]
         if u not in best or (best[u]["answers"] is None and r["answers"] is not None):
             best[u] = r
+    return best
+
+
+def load(paths, personas):
+    """paths: 단일 경로 또는 [phase1, phase2] 리스트. 후자는 uuid로 응답 병합.
+    분리수집(phase1·phase2 별도 파일) 대응 — 양쪽 모두 성공한 uuid만 채택."""
+    if isinstance(paths, str):
+        paths = [paths]
+    pmap = {json.loads(l)["persona"]["uuid"]: json.loads(l) for l in open(personas, encoding="utf-8")}
+    bests = [_best(p) for p in paths]
+    uuids = set(bests[0])
+    for b in bests[1:]:
+        uuids &= set(b)
     recs = []
-    for u, r in best.items():
-        if r["answers"] is None:
+    for u in uuids:
+        merged = {}
+        ok = True
+        for b in bests:
+            r = b.get(u)
+            if not r or r["answers"] is None:
+                ok = False; break
+            merged.update(r["answers"])
+        if not ok:
             continue
         p = pmap[u]
-        recs.append({"uuid": u, "demographics": r["demographics"], "answers": r["answers"],
+        recs.append({"uuid": u, "demographics": bests[0][u]["demographics"], "answers": merged,
                      "stratum": p["stratum"], "occupation": p["persona"]["occupation"]})
     return recs
 
@@ -89,8 +108,10 @@ def row(name, real, orig, v2):
 
 def main():
     import sys
-    fname = sys.argv[1] if len(sys.argv) > 1 else "responses_validate_v2.jsonl"
-    recs = load(os.path.join(OUT, fname), os.path.join(OUT, "personas_phase2.jsonl"))
+    # 인자: 파일 1개(phase all) 또는 2개(phase1 phase2 분리 → uuid 병합)
+    args = sys.argv[1:] or ["responses_validate_v2.jsonl"]
+    paths = [os.path.join(OUT, a) for a in args]
+    recs = load(paths, os.path.join(OUT, "personas_phase2.jsonl"))
     w = compute_weights(recs)
     print(f"검증표본 n={len(recs)} (개선 파이프라인 --elicit, 사후가중)\n")
 
