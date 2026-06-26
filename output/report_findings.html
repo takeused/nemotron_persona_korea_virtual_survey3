@@ -1,0 +1,137 @@
+<!doctype html><meta charset=utf-8>
+<title>재난안전 기술 대국민 인식조사 — 리서치 합성 리포트</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1040px;margin:24px auto;color:#222;padding:0 18px;line-height:1.6}
+h1{border-bottom:3px solid #1a5;padding-bottom:8px}
+h2{border-bottom:2px solid #444;margin-top:34px;padding-top:6px}
+h3{margin-top:8px;color:#1a3c6e}
+table{border-collapse:collapse;margin:10px 0 22px;width:100%}
+th,td{border:1px solid #ddd;padding:6px 10px;font-size:13.5px;vertical-align:top}
+th{background:#f3f4f6}
+.n{text-align:right;font-variant-numeric:tabular-nums}
+.meta{color:#555;font-size:13px;margin:4px 0}
+.note{background:#fff8e1;padding:10px 14px;border-left:4px solid #fb0;font-size:13px}
+.warn{background:#fdecea;padding:12px 16px;border-left:4px solid #e53935;font-size:13.5px;margin:14px 0}
+.summary{background:#e8f5e9;padding:14px 18px;border-left:4px solid #2e7d32;font-size:14.5px;margin:14px 0}
+.theme{border:1px solid #e0e0e0;border-left:4px solid #1a73e8;border-radius:4px;padding:4px 16px 12px;margin:14px 0;background:#fafbff}
+.prev{display:inline-block;background:#1a73e8;color:#fff;font-size:11px;padding:1px 8px;border-radius:10px;margin-left:6px}
+.ev{background:#fff;border-radius:4px;padding:6px 12px;margin:6px 0;font-size:13px}
+.impl{color:#1a5;font-weight:bold;font-size:13px}
+.q{color:#555;font-style:italic}
+.hi{color:#c62828;font-weight:bold}.me{color:#e68a00;font-weight:bold}.lo{color:#2e7d32;font-weight:bold}
+ul{margin:6px 0 14px}li{margin:5px 0}
+small{color:#888}
+</style>
+
+<h1>재난안전 기술 대국민 인식조사 — 리서치 합성 리포트</h1>
+<p class=meta><b>Method:</b> 구조화 설문(Q5~Q30, 26문항) — LLM 합성 페르소나 1인칭 응답 &nbsp;|&nbsp;
+<b>Participants:</b> 542명 (Nemotron-Personas-Korea × zai-glm-4.7, 17개 시도 층화·사후가중)</p>
+<p class=meta><b>Date:</b> 2026-06 &nbsp;|&nbsp; <b>Researcher:</b> takeused &nbsp;|&nbsp; <b>용도:</b> 재난안전 R&D 기술로드맵 기획용 인식 진단</p>
+
+<div class=warn>
+⚠ <b>본 리포트는 LLM 합성 응답 기반 가상조사 결과</b>입니다. 실제 대국민조사 대비 평균은 근접하나 분산·소수의견은 작게 나타나므로,
+<b>경향·우선순위는 참고하되 정량 의사결정은 실제조사로 검증</b>해야 합니다(상세: report_compare.html).
+</div>
+
+<div class=summary>
+<b>Executive Summary</b><br>
+국민은 재난안전 문제에 <b>높은 관심·위기의식</b>(관심 83%, 심각 99.6%)을 가지나, 정작 <b>재난안전 과학기술(R&D) 인지도는 매우 낮다</b>(2.12/5, '안다' 4.1%).
+기술의 현재 효과·활용 체감은 보통(3.0/2.96)인 반면 <b>보급 시 수용의향은 압도적</b>(4.45/5, 99%)으로, '인지·접근성'이 핵심 병목임을 시사한다.
+국민은 R&D의 <b>중요성·투자필요성엔 압도적 동의</b>(4.8/4.71)하되 효과성엔 신중(3.77)하며, 과학기술 역할을 <b>'예방 단계'·'기술 접근성 보급'</b>에서 기대한다.
+정보는 <b>TV·뉴스 등 전통매체</b> 의존이 크고, 잠재 위협으로 <b>기후변화·사이버범죄·시설 노후화·고령화</b>를 꼽았다.
+</div>
+
+<h2>Key Themes</h2>
+
+<div class=theme>
+<h3>Theme 1. 높은 위기의식 ↔ 낮은 기술 인지 (Awareness Gap)<span class=prev>전 응답자</span></h3>
+재난 문제엔 민감하나, 그것을 다루는 과학기술의 존재·내용은 거의 모른다.
+<div class=ev>· Q5 관심도 <b>3.92</b>(관심 83%) / Q6 심각성 <b>4.02</b>(심각 99.6%) &nbsp;vs&nbsp; Q14 R&D 인지도 <b>2.12</b>('모른다' 84%, '안다' 4.1%)</div>
+<div class=impl>→ R&D 성과가 국민 체감으로 연결되지 못함. 인지·소통 격차 해소가 1순위 과제.</div>
+</div>
+
+<div class=theme>
+<h3>Theme 2. 낮은 효과 체감 ↔ 압도적 수용의향 (Adoption Opportunity)<span class=prev>기술 태도 전반</span></h3>
+지금 기술이 잘 활용된다고 느끼진 않지만, 보급되면 적극 쓰겠다는 의향은 매우 높다.
+<div class=ev>· Q20 활용도 <b>2.96</b> / Q16 해결가능성 <b>3.03</b> &nbsp;vs&nbsp; Q21 사용의향 <b>4.45</b>(그렇다 99%)</div>
+<div class=impl>→ 수요는 충분. 기술개발보다 보급·접근성·체감화가 병목.</div>
+</div>
+
+<div class=theme>
+<h3>Theme 3. R&D 가치엔 압도적 지지, 효과성엔 유보 (Value vs Proof)<span class=prev>R&D 평가 3문항</span></h3>
+중요하고 투자도 필요하다는 데엔 강하게 동의하나, 실제 효과엔 상대적으로 신중하다.
+<div class=ev>· Q17 중요성 <b>4.80</b> / Q19 투자필요성 <b>4.71</b> &nbsp;vs&nbsp; Q18 효과성·기여도 <b>3.77</b></div>
+<div class=impl>→ 효과 입증·실증 사례 제시가 신뢰의 다음 단계.</div>
+</div>
+
+<div class=theme>
+<h3>Theme 4. 기술 기대 = '예방 단계'·'접근성 보급' (Where Tech Should Help)<span class=prev>역할 인식</span></h3>
+사후 대응보다 사전 예방에, 첨단성보다 보급·접근성에 과학기술의 역할을 기대한다.
+<div class=ev>· Q27 기여 단계: <b>예측·예방 99%</b> &nbsp;·&nbsp; Q22 핵심요소: <b>기술 접근성·보급 87%</b>(연구개발 10%) &nbsp;·&nbsp; Q26 기여 기대: <b>화재·감염병·태풍</b></div>
+<div class=impl>→ 로드맵 우선순위를 예방형·보급형 기술에 둘 근거.</div>
+</div>
+
+<div class=theme>
+<h3>Theme 5. 전통매체 의존 정보경로 (Channel)<span class=prev>Q15</span></h3>
+재난안전 기술 정보를 주로 TV·뉴스에서 접한다.
+<div class=ev>· Q15 1순위: <b>TV·라디오 55% / 뉴스포털 31% / SNS 14%</b> (정부·공공 플랫폼 0.3%)</div>
+<div class=impl>→ 정부·공공 채널 도달 미미. 전통매체·언론 연계 소통 전략 필요.</div>
+</div>
+
+<div class=theme>
+<h3>Theme 6. '보통+' 안전감, 잠재위협은 신종복합형 (Emerging Risks)<span class=prev>Q28·Q30</span></h3>
+자기 지역은 보통~약간 안전하다 보나, 미래 위협으로 기후·사이버·고령화를 우려한다.
+<div class=ev>· Q28 거주지 안전도 <b>3.49</b> · Q30 빈출: <b>기후변화·국지성호우·사이버/보이스피싱·시설 노후화·고령화</b></div>
+<div class=ev q>"최근 기후 변화로 예측 불가능한 국지성 호우나 폭염..." — P(40대)<br>
+"고령화와 디지털 기술 발전으로 AI 기반 보이스피싱이나 사이버 테러..." — P(고학력)<br>
+"동네가 낡아서 전기·가스 설비 노후화로 인한 화재가 걱정..." — P(저학력)</div>
+<div class=impl>→ 단일재난형을 넘어 기후·디지털·고령사회 복합위험을 선제 관리 대상으로.</div>
+</div>
+
+<h2>Insights → Opportunities</h2>
+<table>
+<tr><th>Insight (학습)</th><th>Opportunity (정책·R&D 기회)</th><th>Impact</th><th>Effort</th></tr>
+<tr><td>관심은 높은데 R&D 인지 4%</td><td>성과 가시화·국민 소통 캠페인</td><td class=hi>High</td><td class=me>Med</td></tr>
+<tr><td>수용의향 99% vs 활용 체감 낮음</td><td>보급·접근성 중심 사업 확대</td><td class=hi>High</td><td class=me>Med</td></tr>
+<tr><td>효과성 인식만 유보(3.77)</td><td>실증·체감 사례 공개</td><td class=hi>High</td><td class=me>Med</td></tr>
+<tr><td>기대가 '예방'에 집중</td><td>예측·조기경보 기술 우선투자</td><td class=hi>High</td><td class=hi>High</td></tr>
+<tr><td>정보경로가 TV·뉴스</td><td>언론연계 리스크 커뮤니케이션</td><td class=me>Med</td><td class=lo>Low</td></tr>
+<tr><td>잠재위협=기후·사이버·고령</td><td>복합·신종재난 R&D 트랙 신설</td><td class=hi>High</td><td class=hi>High</td></tr>
+</table>
+
+<h2>User Segments Identified</h2>
+<table>
+<tr><th>Segment</th><th>Characteristics</th><th>Needs</th><th>Size</th></tr>
+<tr><td>고령층(60대)</td><td>위기의식 높음, R&D 인지 최저(Q14 1.89)</td><td>쉬운 전달·전통매체·생활밀착</td><td class=n>~21%</td></tr>
+<tr><td>중장년(40·50대)</td><td>R&D 인지 상대적 높음(40대 2.33)</td><td>실증·효과 정보</td><td class=n>~44%</td></tr>
+<tr><td>청년층(20·30대)</td><td>디지털·신종위험 민감</td><td>사이버·디지털안전 기술</td><td class=n>~35%</td></tr>
+<tr><td>고학력층</td><td>해결가능성·효과 인식 상대적↑(대학원 Q16 3.16)</td><td>근거·데이터 기반 소통</td><td class=n>~5%</td></tr>
+<tr><td>수도권 거주</td><td>거주지 안전감 낮음(서울 3.26 vs 세종 4.04)</td><td>도시형 재난(침수·인파·노후) 대응</td><td class=n>~46%</td></tr>
+</table>
+
+<h2>Recommendations</h2>
+<ol>
+<li><b class=hi>[High]</b> <b>인지격차 해소를 최우선 과제로</b> — 높은 관심(83%)을 R&D 인지·신뢰로 전환. TV·뉴스 등 실제 도달 채널 활용. <small>(Theme 1·5)</small></li>
+<li><b class=hi>[High]</b> <b>'보급·접근성' 중심 R&D·정책</b> — 수용의향 99% 확보됨 → 개발보다 전달·체감화에 자원 배분. <small>(Theme 2·4)</small></li>
+<li><b class=hi>[High]</b> <b>예방형 기술 우선투자</b> — 기대가 예측·예방에 집중(99%). 조기경보·예측 로드맵 강화. <small>(Theme 4)</small></li>
+<li><b class=me>[Med]</b> <b>효과 실증·공개로 신뢰 제고</b> — 중요성(4.8)·효과성(3.77) 간극을 사례로 메움. <small>(Theme 3)</small></li>
+<li><b class=me>[Med]</b> <b>복합·신종재난 트랙 신설</b> — 기후·사이버·고령사회 위험. <small>(Theme 6)</small></li>
+</ol>
+
+<h2>Questions for Further Research</h2>
+<ul>
+<li>인지도 4%는 실제로도 그렇게 낮은가? (합성은 인지도 과소평가 가능 — 실제조사 교차검증)</li>
+<li>'수용의향 99%'는 합성 긍정편향 가능 — 실측 87.7%와 비교 시 과대.</li>
+<li>예방단계 99% 쏠림은 합성 분산소멸 산물 — 실제(55.6%)와 큰 차이, 해석 주의.</li>
+<li>세그먼트별 미세 차이는 통계적으로 유의한가? (합성은 집단차 과소표현)</li>
+</ul>
+
+<h2>Methodology Notes</h2>
+<ul>
+<li><b>표본:</b> 2025 주민등록인구 기준 층화추출 542명, 사후층화 가중. 가중%=모집단 추정.</li>
+<li><b class=hi>★중대 한계 — 합성 데이터:</b> LLM 합성 응답으로 ① 긍정편향(수용의향·중요성 과대) ② 분산소멸(예방 99% 등 단일쏠림) 경향. 평균 경향은 실제와 근접(report_compare.html 검증)하나 <b>수치를 정책 근거로 단독 사용 금지. 고위험 결정은 실제조사 ≥60% 비중.</b></li>
+<li><b>관찰/해석 분리:</b> %·평균은 관찰, '~격차/~기회/~병목'은 해석.</li>
+<li><b>출처:</b> output/report_all.html(통합집계) · 실측 대조 survey_ref/대국민조사리포트.pdf · 재현성 평가 output/research_synthesis.md</li>
+</ul>
+
+<p><small>생성: research-synthesis 형식 · output/research_synthesis_findings.md 기반 HTML 변환.</small></p>
