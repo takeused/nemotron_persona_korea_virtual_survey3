@@ -1,23 +1,24 @@
 # 진행상황 인수인계 (PROGRESS)
 
-마지막 업데이트: 2026-06-26 (★v3 재검증 완료 — 과잉보정 원인=프롬프트 규명, 프롬프트 완화 반영. 다음=v4 재검증)
+마지막 업데이트: 2026-07-02 (★v4 검증 완료 — 프롬프트 완화로 과잉보정 사실상 해소 확인(n=18 잠정). 다음=v5 대표본 확정검증)
 
-## ⏭️ 다음 세션 바로 할 일 — v4 재검증 (토큰 리셋 후)
-**목적:** 완화된 프롬프트(무관심유도 제거+심각도 보호절, 커밋됨)로 척도평균 과잉보정이 해소되면서 분산회복이 유지되는지 확인.
-**전제:** Cerebras 일일토큰 리셋 필요(1M). `set_api_key.ps1` 점-소싱 먼저. 분리수집(phase1→phase2)이 필수(단일 phase all은 토큰폭증으로 실패 확정).
+## ⏭️ 다음 세션 바로 할 일 — v5 대표본 확정검증 (토큰 1M 리셋 후)
+**상황:** 개선 작업은 사실상 완료. v4(완화 프롬프트)에서 과잉보정이 해소되고 분산도 유지됨을 확인했으나 **n=18 소표본(토큰소진)이라 잠정적.** 남은 건 대표본으로 수치 확정하는 것뿐.
+**목적:** phase1·phase2 각 n=60 완주로 v4 경향(Q6~4.0, Q16~3.4, Q28~3.4, Q29~72, Q22 분산유지)이 대표본서도 유지되는지 확정.
+**전제:** Cerebras 일일토큰 **1M 완전 리셋 필요**(phase1 ~234K + phase2 ~530K = ~764K). 부분회복(<800K)이면 phase1만 먼저. `set_api_key.ps1` 점-소싱 먼저. 분리수집 필수(단일 phase all은 토큰폭증 실패 확정).
 ```powershell
 . "D:\01 WORK\260605 nemotron virtual survey2\set_api_key.ps1"
 cd "D:\01 WORK\260605 nemotron virtual survey2"
-# 1) phase1 (가벼움 ~234K)
-py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl --out output/responses_test60_p1_v4.jsonl --phase phase1 --workers 2 --min-interval 20 --limit 60
-# 2) phase2 (~530K) — phase1 끝난 뒤
-py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl --out output/responses_test60_p2_v4.jsonl --phase phase2 --workers 2 --min-interval 28 --limit 60
+# 1) phase1 (~234K) — 토큰 부분회복(>300K)이면 이것만이라도
+py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl --out output/responses_test60_p1_v5.jsonl --phase phase1 --workers 2 --min-interval 20 --limit 60
+# 2) phase2 (~530K) — phase1 끝난 뒤, 토큰 넉넉할 때
+py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl --out output/responses_test60_p2_v5.jsonl --phase phase2 --workers 2 --min-interval 28 --limit 60
 # 3) 병합 비교
-py survey/_validate_compare.py responses_test60_p1_v4.jsonl responses_test60_p2_v4.jsonl
+py survey/_validate_compare.py responses_test60_p1_v5.jsonl responses_test60_p2_v5.jsonl
 ```
-**확인 포인트:** Q6 심각(현 v3 3.55 → 실제 4.0에 접근?), Q28 안전(3.05→3.4?), Q16(2.73→3.4?) 회복 여부 + Q9/Q22 다양성·Q27 분산 유지 여부.
-**만약 과잉보정 여전하면:** 근본 해법은 **계획 #4(문항별 선택보정, train/test 분할 JS divergence)** — 일괄 프롬프트 교정의 한계. report_compare.html 10절 참조.
-**토큰 소진 주의:** 호출당 약 phase1 4K/phase2 9K. 분당 30K TPM 한도 → interval 20~28s 유지. 빈content/재시도는 max_retry=4·max_tokens=6000·누적echo제거로 이미 완화됨.
+**확인 포인트:** 아래 검증이력표 v4행(Q6 3.97·Q16 3.16·Q28 3.41·Q29 75.4·Q22 접근성 1위)이 n=60서도 유지되는가. 유지되면 **개선 완료 선언 + report_compare.html 10절 갱신(과잉보정 해소).** 미흡하면 계획#4(문항별 선택보정, train/test JS divergence).
+**토큰 소진 주의:** 호출당 phase1 ~4K/phase2 ~9K. 분당 30K TPM → interval 20~28s. 빈content/재시도는 max_retry=4·max_tokens=6000·누적echo제거로 완화됨. **과거 phase2는 막판 429 잦음 → 부분(n≈18~40)만 성공해도 방향 확인 가능.**
+**현재 코드상태(모두 커밋됨):** elicit 기본ON·temp0.85·style계수0.15·완화프롬프트(무관심유도 제거+심각도 보호절)·순위형PL·DK/불성실주입.
 
 ### 검증 이력(계수·프롬프트별 척도평균, 실제 Q6=4.0/Q16=3.4/Q28=3.4)
 | 버전 | 설정 | Q6 | Q16 | Q28 | Q27예방 | Q29예% |
