@@ -1,6 +1,35 @@
 # 진행상황 인수인계 (PROGRESS)
 
-마지막 업데이트: 2026-06-23 (★★2차 완료 542/542 + 통합·비교 리포트 + ★실제설문 근접 개선안 파이프라인 반영)
+마지막 업데이트: 2026-06-26 (★v3 재검증 완료 — 과잉보정 원인=프롬프트 규명, 프롬프트 완화 반영. 다음=v4 재검증)
+
+## ⏭️ 다음 세션 바로 할 일 — v4 재검증 (토큰 리셋 후)
+**목적:** 완화된 프롬프트(무관심유도 제거+심각도 보호절, 커밋됨)로 척도평균 과잉보정이 해소되면서 분산회복이 유지되는지 확인.
+**전제:** Cerebras 일일토큰 리셋 필요(1M). `set_api_key.ps1` 점-소싱 먼저. 분리수집(phase1→phase2)이 필수(단일 phase all은 토큰폭증으로 실패 확정).
+```powershell
+. "D:\01 WORK\260605 nemotron virtual survey2\set_api_key.ps1"
+cd "D:\01 WORK\260605 nemotron virtual survey2"
+# 1) phase1 (가벼움 ~234K)
+py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl --out output/responses_test60_p1_v4.jsonl --phase phase1 --workers 2 --min-interval 20 --limit 60
+# 2) phase2 (~530K) — phase1 끝난 뒤
+py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl --out output/responses_test60_p2_v4.jsonl --phase phase2 --workers 2 --min-interval 28 --limit 60
+# 3) 병합 비교
+py survey/_validate_compare.py responses_test60_p1_v4.jsonl responses_test60_p2_v4.jsonl
+```
+**확인 포인트:** Q6 심각(현 v3 3.55 → 실제 4.0에 접근?), Q28 안전(3.05→3.4?), Q16(2.73→3.4?) 회복 여부 + Q9/Q22 다양성·Q27 분산 유지 여부.
+**만약 과잉보정 여전하면:** 근본 해법은 **계획 #4(문항별 선택보정, train/test 분할 JS divergence)** — 일괄 프롬프트 교정의 한계. report_compare.html 10절 참조.
+**토큰 소진 주의:** 호출당 약 phase1 4K/phase2 9K. 분당 30K TPM 한도 → interval 20~28s 유지. 빈content/재시도는 max_retry=4·max_tokens=6000·누적echo제거로 이미 완화됨.
+
+### 검증 이력(계수·프롬프트별 척도평균, 실제 Q6=4.0/Q16=3.4/Q28=3.4)
+| 버전 | 설정 | Q6 | Q16 | Q28 | Q27예방 | Q29예% |
+|---|---|---|---|---|---|---|
+| 기존 | 구프롬프트·elicit無 | 4.02 | 3.03 | 3.49 | 99.4 | 48.8 |
+| v2(n46) | 계수0.30+무관심프롬프트 | 3.53 | 2.76 | 2.95 | 66.1 | 61.6 |
+| v3(n56) | 계수0.15+무관심프롬프트 | 3.55 | 2.73 | 3.05 | 56.5 | 54.0 |
+| v4(예정) | 계수0.15+완화프롬프트 | ? | ? | ? | ? | ? |
+→ v2→v3: 계수완화 효과 미미(과잉보정 원인=프롬프트 확인). v4=프롬프트 완화 효과 측정.
+
+---
+
 
 ## ★실제조사 근접 개선 (2026-06-23 반영) — 다음 실행부터 자동 적용
 - **배경:** 실제 대국민조사(1,023명, PDF)와 가상조사(542명) 비교 → `output/report_compare.html`. LLM 응답의 ①분산소멸 ②최신사건 기억부재 ③전형쏠림 ④자기지역 낙관편향 미재현 ⑤긍정편향 ⑥표본학력차 6원인 분석.
