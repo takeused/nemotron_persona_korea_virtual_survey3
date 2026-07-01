@@ -25,8 +25,16 @@ py survey/_validate_compare.py responses_test60_p1_v4.jsonl responses_test60_p2_
 | 기존 | 구프롬프트·elicit無 | 4.02 | 3.03 | 3.49 | 99.4 | 48.8 |
 | v2(n46) | 계수0.30+무관심프롬프트 | 3.53 | 2.76 | 2.95 | 66.1 | 61.6 |
 | v3(n56) | 계수0.15+무관심프롬프트 | 3.55 | 2.73 | 3.05 | 56.5 | 54.0 |
-| v4(예정) | 계수0.15+완화프롬프트 | ? | ? | ? | ? | ? |
-→ v2→v3: 계수완화 효과 미미(과잉보정 원인=프롬프트 확인). v4=프롬프트 완화 효과 측정.
+| v4-p1(n48) | 계수0.15+완화프롬프트 | **3.66** | (phase2 미측정) | - | - | - |
+→ v2→v3: 계수완화 효과 미미(과잉보정 원인=프롬프트 확인). **v4-p1: 프롬프트 완화가 Q6 3.55→3.66 회복(부분)·Q9 모드 감염병으로 교정·Q12 분산유지 — 진단 확증.** phase2(Q16/Q28/Q29)는 다음 토큰사이클서 측정 필요(v4-p2).
+
+### v4 재개(다음 토큰사이클) — phase2만 마저
+```powershell
+. "D:\01 WORK\260605 nemotron virtual survey2\set_api_key.ps1"; cd "D:\01 WORK\260605 nemotron virtual survey2"
+py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl --out output/responses_test60_p2_v4.jsonl --phase phase2 --workers 2 --min-interval 28 --limit 60
+py survey/_validate_compare.py responses_test60_p1_v4.jsonl responses_test60_p2_v4.jsonl
+```
+확인: Q16(v3 2.73→?), Q28(v3 3.05→?), Q29(v3 54→?)가 완화프롬프트로 회복되는지. 회복 부족하면 → 계획#4 문항별 선택보정.
 
 ---
 
