@@ -25,16 +25,13 @@ py survey/_validate_compare.py responses_test60_p1_v4.jsonl responses_test60_p2_
 | 기존 | 구프롬프트·elicit無 | 4.02 | 3.03 | 3.49 | 99.4 | 48.8 |
 | v2(n46) | 계수0.30+무관심프롬프트 | 3.53 | 2.76 | 2.95 | 66.1 | 61.6 |
 | v3(n56) | 계수0.15+무관심프롬프트 | 3.55 | 2.73 | 3.05 | 56.5 | 54.0 |
-| v4-p1(n48) | 계수0.15+완화프롬프트 | **3.66** | (phase2 미측정) | - | - | - |
-→ v2→v3: 계수완화 효과 미미(과잉보정 원인=프롬프트 확인). **v4-p1: 프롬프트 완화가 Q6 3.55→3.66 회복(부분)·Q9 모드 감염병으로 교정·Q12 분산유지 — 진단 확증.** phase2(Q16/Q28/Q29)는 다음 토큰사이클서 측정 필요(v4-p2).
+| v4-p1(n48) | 계수0.15+완화프롬프트 | 3.66 | - | - | - | - |
+| **v4(n18)** | 계수0.15+완화프롬프트 | **3.97** | **3.16** | **3.41** | 70.8 | **75.4** |
+→ v2→v3: 계수완화 효과 미미(원인=프롬프트 확인). **v4: 프롬프트 완화로 과잉보정 사실상 해소 — Q6 3.55→3.97, Q16 2.73→3.16, Q28 3.05→3.41, Q29 54→75.4 모두 실제 수준 회복. Q22 접근성 44.5%(실제43.6 거의정확)로 분산도 유지 = 트레이드오프 없는 양방향 개선.** ⚠단 v4는 n=18(토큰소진 소표본)→ **큰 표본 확정검증 남음**(Q6도 n48선 3.66, n18선 3.97로 편차).
 
-### v4 재개(다음 토큰사이클) — phase2만 마저
-```powershell
-. "D:\01 WORK\260605 nemotron virtual survey2\set_api_key.ps1"; cd "D:\01 WORK\260605 nemotron virtual survey2"
-py survey/run_survey.py --model zai-glm-4.7 --personas output/personas_phase2.jsonl --out output/responses_test60_p2_v4.jsonl --phase phase2 --workers 2 --min-interval 28 --limit 60
-py survey/_validate_compare.py responses_test60_p1_v4.jsonl responses_test60_p2_v4.jsonl
-```
-확인: Q16(v3 2.73→?), Q28(v3 3.05→?), Q29(v3 54→?)가 완화프롬프트로 회복되는지. 회복 부족하면 → 계획#4 문항별 선택보정.
+### ✅ 결론: 완화 프롬프트 채택. 남은 건 대표본 확정검증뿐.
+다음 토큰사이클(1M 리셋 후): phase1·phase2 각 n=60 완주로 v4 수치 확정. 명령은 아래 "v4 재검증" 블록의 파일명을 _v5로.
+회복이 대표본서도 유지되면 개선 완료. 미흡하면 계획#4(문항별 선택보정, JS divergence).
 
 ---
 
