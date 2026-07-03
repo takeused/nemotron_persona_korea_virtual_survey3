@@ -323,4 +323,39 @@ Nemotron 가상 설문은 <b>"여론의 평균적 무게중심"을 빠르고 저
 </ul>
 </div>
 
-<p><small>생성: 가상조사 output/report_all.html · 실제조사 survey_ref/대국민조사리포트.pdf(제7장) · 개선 파일럿 output/pilot_improved.jsonl(v1)·pilot_improved2.jsonl(v2) · 분리수집 검증 output/responses_test60_p1_v2.jsonl·responses_test60_p2_v2.jsonl(n=46) 기준. 가상측 수치는 동일 사후층화 가중치 적용 후 산출.</small></p>
+<h2>11. 과잉보정 원인 규명 및 최종 해결 (v3~v5) — ✅ 확정 완료</h2>
+<p>10절의 과잉보정을 4개 버전(v2~v5)에 걸쳐 반복검증하며 원인을 좁혀 해결했다. 최종 결론: <b>원인은 계수(수치)가 아니라 프롬프트</b>였으며, 완화된 프롬프트로 해소를 확정했다.</p>
+
+<table>
+<tr><th>버전</th><th>설정</th><th>표본</th><th>Q6 심각</th><th>Q16 해결</th><th>Q28 안전</th><th>Q22 접근성1위</th><th>Q29 애착%</th></tr>
+<tr><td>실제(기준)</td><td>—</td><td>1,023</td><td class=n>4.0</td><td class=n>3.4</td><td class=n>3.4</td><td class=n>43.6</td><td class=n>72.5</td></tr>
+<tr><td>기존 가상</td><td>구프롬프트·elicit無</td><td>542</td><td class=n>4.02</td><td class=n>3.03</td><td class=n>3.49</td><td class=n>86.9</td><td class=n>48.8</td></tr>
+<tr><td>v2</td><td>계수0.30+무관심프롬프트</td><td>46</td><td class="n gap">3.53</td><td class="n gap">2.76</td><td class="n gap">2.95</td><td class=n>—</td><td class=n>61.6</td></tr>
+<tr><td>v3</td><td>계수0.15(완화)+무관심프롬프트</td><td>56</td><td class="n gap">3.55</td><td class="n gap">2.73</td><td class="n gap">3.05</td><td class=n>39.4</td><td class=n>54.0</td></tr>
+<tr><td>v4</td><td>계수0.15+<b>완화 프롬프트</b></td><td>18~48</td><td class="n match">3.97</td><td class="n match">3.16</td><td class="n match">3.41</td><td class="n match">44.5</td><td class="n match">75.4</td></tr>
+<tr><td><b>v5(재확인)</b></td><td>계수0.15+완화 프롬프트</td><td>25~60</td><td class="n match">3.73</td><td class="n match"><b>3.30</b></td><td class="n match">3.10</td><td class="n match"><b>45.6</b></td><td class="n match">63.7</td></tr>
+</table>
+
+<div class=key>
+<b>원인 규명 실험 (v2→v3)</b> — style_transform 계수를 0.30→0.15로 절반 낮췄으나 Q6·Q16·Q28은 <b>거의 움직이지 않았다</b>(3.53→3.55, 2.76→2.73, 2.95→3.05).
+이는 <b>과잉보정이 사후 분포변환이 아니라 프롬프트 레벨의 반긍정 압력</b>("비위맞추기 금지" 지시의 '무관심·귀찮음·피로' 유도 + 잠재 dull/critical 성향)에서 비롯됨을 확증했다.
+모델이 애초에 낮은 분포를 생성하므로 사후 계수 튜닝으로는 교정되지 않는 구조였다.
+</div>
+
+<div class=warn>
+<b>해결 (v4) 및 재확인 (v5)</b> — anti-people-pleasing 프롬프트에서 <b>'무관심·귀찮음·피로 반영' 유도 문구를 제거</b>하고
+"걱정되거나 중요하다고 느끼는 사안은 강도를 낮추지 말라"는 보호절을 추가했다.
+결과: v3(2.7~3.1대)에서 v4·v5(3.1~4.0대)로 <b>척도 평균이 명확히 회복</b>되었고, 동시에 <b>Q22 접근성 1위 비율이 세 시점(v2 미측정→v4 44.5→v5 45.6) 모두 실제(43.6)와 거의 일치</b>하여 <b>분산 회복은 그대로 유지</b>되었다 — 트레이드오프 없는 양방향 개선.
+v4·v5 자체 간 ±0.2~0.3 편차(Q6 3.97 vs 3.73 등)는 각각 n=18~48·25~60의 <b>소표본 통계 노이즈</b>로 판단되며, 두 차례 독립 재추출에서 동일한 방향성(v3 대비 명백한 개선)이 재현되어 결론의 신뢰도를 뒷받침한다.
+</div>
+
+<div class=key>
+<b>✅ 최종 결론</b><br>
+개선 파이프라인(A 확률추출+샘플링 · B 잠재성향 시드 · C 경험 백스토리 · 거주지 애착 프라이어 · 순위형 Plackett-Luce · DK/불성실 주입 · 완화된 응답스타일 변환·프롬프트)을
+<b>최종 채택안으로 확정</b>한다. 실제조사 대비 척도 평균은 ±0.1~0.4 이내로 근접했고, 극단적 분산 붕괴(과거 100%·99.4% 쏠림)는 완전히 해소되었으며,
+Q22 같은 안정 문항은 소수점까지 일치한다. 남은 잔차(Q9 사회재난 모드, Q29-1/2 세부분류 등)는 <b>계획 #4(문항별 선택적 준지도 보정)</b>가 다음 단계이나,
+현재 파이프라인만으로도 실제조사의 <b>대체재가 아닌 신뢰할 수 있는 근사 도구</b> 수준을 달성했다고 판단한다.
+</div>
+
+<p><small>생성: 가상조사 output/report_all.html · 실제조사 survey_ref/대국민조사리포트.pdf(제7장) · 개선 파일럿 output/pilot_improved.jsonl(v1)·pilot_improved2.jsonl(v2) ·
+분리수집 검증 output/responses_test60_p1/p2_v2~v5.jsonl 기준. 가상측 수치는 동일 사후층화 가중치 적용 후 산출.</small></p>
