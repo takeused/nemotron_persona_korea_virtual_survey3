@@ -6,11 +6,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "output"
 REPORTS = [
-    ("report_all.html", "Integrated results", "Q1-Q30 integrated tables"),
-    ("report_compare.html", "Actual survey comparison", "Reproducibility and roadmap"),
-    ("report_findings.html", "Research findings", "Key findings and implications"),
-    ("report_phase1.html", "Phase 1 results", "Q1-Q13"),
-    ("report_phase2.html", "Phase 2 results", "Q14-Q30"),
+    ("report_all.html", "\ud1b5\ud569 \uacb0\uacfc", "Q1~Q30 \ud1b5\ud569 \ud45c"),
+    ("report_compare.html", "\uc2e4\uc81c\uc870\uc0ac \ube44\uad50", "\uc7ac\ud604\uc131\u00b7\uac1c\uc120 \ub85c\ub4dc\ub9f5"),
+    ("report_findings.html", "\uc5f0\uad6c \uc885\ud569", "\ud575\uc2ec \ubc1c\uacac\uacfc \uc2dc\uc0ac\uc810"),
+    ("report_phase1.html", "1\ucc28 \uacb0\uacfc", "Q1~Q13"),
+    ("report_phase2.html", "2\ucc28 \uacb0\uacfc", "Q14~Q30"),
 ]
 
 
@@ -41,11 +41,11 @@ def main() -> None:
         )
 
     html = f'''<!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Virtual survey - private reports</title>
+<title>\uac00\uc0c1 \uc124\ubb38\uc870\uc0ac - \ube44\uacf5\uac1c \ubcf4\uace0\uc11c</title>
 <style>
 :root {{ color-scheme: light; font-family: "Malgun Gothic", system-ui, sans-serif; }}
 * {{ box-sizing: border-box; }}
@@ -74,16 +74,16 @@ iframe {{ display: block; width: 100%; min-height: calc(100vh - 170px); border: 
 <body>
 <div id="gate">
   <form class="card" id="login">
-    <h1>Private reports</h1>
-    <p>Enter the password to open the virtual survey report index.</p>
+    <h1>\ube44\uacf5\uac1c \ubcf4\uace0\uc11c</h1>
+    <p>\uac00\uc0c1 \uc124\ubb38\uc870\uc0ac \ubcf4\uace0\uc11c\ub97c \uc5f4\ub824\uba74 \ube44\ubc00\ubc88\ud638\ub97c \uc785\ub825\ud558\uc138\uc694.</p>
     <input id="password" type="password" autocomplete="current-password" autofocus>
-    <button type="submit">Open</button>
+    <button type="submit">\uc5f4\uae30</button>
     <div id="error" aria-live="polite"></div>
   </form>
 </div>
 <main id="app">
-  <header><h1>Virtual survey report index</h1><p>Password protected; five original HTML reports are embedded in this file.</p></header>
-  <nav class="tabs" aria-label="Report selection">{"".join(tabs)}</nav>
+  <header><h1>\uac00\uc0c1 \uc124\ubb38\uc870\uc0ac \ubcf4\uace0\uc11c \ubaa9\ub85d</h1><p>\ube44\ubc00\ubc88\ud638\ub85c \ubcf4\ud638\ub418\uba70, \uc6d0\ubcf8 HTML 5\uac1c\uac00 \uc774 \ud30c\uc77c\uc5d0 \ud3ec\ud568\ub418\uc5b4 \uc788\uc2b5\ub2c8\ub2e4.</p></header>
+  <nav class="tabs" aria-label="\ubcf4\uace0\uc11c \uc120\ud0dd">{"".join(tabs)}</nav>
   {"".join(panes)}
 </main>
 <script>
@@ -101,7 +101,7 @@ document.getElementById("login").addEventListener("submit", (event) => {{
   event.preventDefault();
   const value = document.getElementById("password").value;
   if (hash(value) === PASSWORD_HASH) {{ sessionStorage.setItem("private-report-unlocked", PASSWORD_HASH); unlock(); }}
-  else {{ document.getElementById("error").textContent = "Incorrect password."; }}
+  else {{ document.getElementById("error").textContent = "\ube44\ubc00\ubc88\ud638\uac00 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4."; }}
 }});
 document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => {{
   document.querySelectorAll(".tab, .report-pane").forEach((el) => el.classList.remove("active"));
