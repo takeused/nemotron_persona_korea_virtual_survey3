@@ -13,6 +13,7 @@ from build_prompt import (build_messages, persona_rng, persona_traits, ELICIT_TY
                           elicit_options, sample_dist, style_transform, apply_dk, sample_rank)
 from validate import validate_response
 from survey_schema import get_llm_questions, PHASE1_QIDS, PHASE2_QIDS
+from coherence import PROFILE_VERSION
 
 CEREBRAS_BASE = "https://api.cerebras.ai/v1"
 _write_lock = threading.Lock()
@@ -128,7 +129,8 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
             ok, errs = validate_response(ans, questions)
             if ok:
                 return {"uuid": rec["persona"]["uuid"], "demographics": rec["demographics"],
-                        "answers": ans, "model": model, "attempts": attempt}
+                        "answers": ans, "model": model, "attempts": attempt,
+                        "profile_version": PROFILE_VERSION}
             last_err = "; ".join(errs[:6])
             correction = f"이전 시도에 오류가 있었습니다: {last_err}. 모든 문항을 규칙대로, JSON 객체 하나만 다시 출력하십시오."
         except Exception as e:
@@ -138,7 +140,8 @@ def answer_one(client, model, rec, questions, max_retry=6, max_tokens=4000, reas
             is_429 = ("429" in str(e) or "too_many" in str(e) or "queue" in str(e))
             time.sleep(0.0 if is_429 else min(3.0, 1.0 * attempt))
     return {"uuid": rec["persona"]["uuid"], "demographics": rec["demographics"],
-            "answers": None, "model": model, "error": last_err}
+            "answers": None, "model": model, "error": last_err,
+            "profile_version": PROFILE_VERSION}
 
 
 def load_done(path):

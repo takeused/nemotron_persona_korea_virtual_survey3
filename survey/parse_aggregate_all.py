@@ -37,7 +37,8 @@ def load_merged(p1, p2, personas):
             continue
         ans = dict(r1["answers"]); ans.update(r2["answers"])  # Q5~Q13 + Q14~Q30
         recs.append({"uuid": u, "demographics": r1["demographics"], "answers": ans,
-                     "stratum": p["stratum"], "occupation": p["persona"]["occupation"]})
+                     "stratum": p["stratum"], "occupation": p["persona"]["occupation"],
+                     "persona": p["persona"]})
     return recs
 
 
@@ -47,11 +48,20 @@ def main():
     ap.add_argument("--p2", default=os.path.join(OUT_DIR, "responses_phase2.jsonl"))
     ap.add_argument("--personas", default=os.path.join(OUT_DIR, "personas_phase2.jsonl"))
     ap.add_argument("--report", default=os.path.join(OUT_DIR, "report_all.html"))
+    ap.add_argument("--engagement-weighted", action="store_true",
+                    help="잠재 관여도 보정 가중치 적용(기본은 기존 가중치)")
     args = ap.parse_args()
 
     recs = load_merged(args.p1, args.p2, args.personas)
     n = len(recs)
-    weights = compute_weights(recs)
+    if args.engagement_weighted:
+        from engagement import engagement_score
+        from pop_table import compute_engagement_weights
+        for r in recs:
+            r["engagement_score"] = engagement_score(r["persona"], r["demographics"])
+        weights = compute_engagement_weights(recs)
+    else:
+        weights = compute_weights(recs)
     print(f"통합 로드: {n}명 (Q5~Q30 병합 완료)")
 
     A = lambda qid: (lambda r: r["answers"][qid])
@@ -148,11 +158,13 @@ def main():
              ".warn{background:#fdecea;padding:10px 14px;border-left:4px solid #e53935;font-size:13px;margin:12px 0}"
              ".phase{background:#e8f0fe;padding:4px 12px;border-left:4px solid #1a73e8;font-weight:bold;margin:18px 0 4px}"
              "ul.open{font-size:13px;line-height:1.6;background:#f8f9fa;padding:10px 14px 10px 30px;border-radius:4px}")
+    weight_note = ("사후층화 가중치 + 잠재 관여도 보정(옵트인) 적용" if args.engagement_weighted
+                   else "사후층화 가중치(표 7.2 모집단) 적용")
     body = f"""<!doctype html><meta charset=utf-8><title>재난안전 인식조사 — 합성 페르소나 통합(Q1~Q30)</title>
 <style>{style}</style>
 <h1>재난안전 기술 대국민 인식조사 — 합성 페르소나 통합 결과 (Q1~Q30)</h1>
 <div class=note>Nemotron-Personas-Korea 페르소나가 zai-glm-4.7로 1인칭 응답. 표본 {n}명(층화추출, 표 7.3 재현).
-1차(Q5~Q13)·2차(Q14~Q30)를 동일 응답자로 병합. 사후층화 가중치(표 7.2 모집단) 적용.
+1차(Q5~Q13)·2차(Q14~Q30)를 동일 응답자로 병합. {weight_note}.
 가중%=모집단 추정치, 비가중%=원표본.</div>
 <div class=warn>{caveat}</div>
 <h2>0. 표본 구성 (인구통계 Q1~Q4)</h2>{demo}

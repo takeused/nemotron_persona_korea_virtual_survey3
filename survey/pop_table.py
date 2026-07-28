@@ -51,6 +51,16 @@ def compute_weights(records):
     return [w / mean for w in raw]
 
 
+def compute_engagement_weights(records):
+    """Existing post-stratification weights plus optional engagement adjustment."""
+    from engagement import engagement_factors
+    base = compute_weights(records)
+    factors = engagement_factors(records)
+    combined = [w * f for w, f in zip(base, factors)]
+    mean = sum(combined) / len(combined) if combined else 1.0
+    return [w / mean for w in combined]
+
+
 if __name__ == "__main__":
     print("N_TOTAL =", f"{N_TOTAL:,}", "(기대 36,864,414)")
     assert N_TOTAL == 36864414, "모집단 합 불일치 — 표 7.2 전사 오류"

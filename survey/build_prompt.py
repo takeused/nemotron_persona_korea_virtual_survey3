@@ -5,6 +5,7 @@ from survey_schema import (
     NATURAL, SOCIAL, SAFETY, RND_ITEMS,
 )
 from sample_personas import PROVINCE_LABEL
+from coherence import build_attitude_profile, render_attitude_profile
 
 
 def _persona_block(p, demo):
@@ -116,9 +117,12 @@ def persona_traits(persona, demographics=None):
 
 def latent_block(persona, demographics=None):
     t = persona_traits(persona, demographics)
+    profile = build_attitude_profile(persona, demographics)
     extra = " 당신은 설문을 꼼꼼히 읽지 않고 다소 대충 답하는 편입니다." if t["low_effort"] else ""
     return ("당신의 숨은 성향·경험(응답에 자연스럽게 반영하되, 드러내 말하지는 마십시오):\n- "
-            + "\n- ".join(t["labels"]) + extra)
+            + "\n- ".join(t["labels"]) + extra
+            + "\n\n[문항 간 일관성을 위한 태도 프로파일]\n"
+            + render_attitude_profile(profile))
 
 
 # ── A: 확률추출 대상 유형 + 샘플링 (파일럿 v2 검증 — 분산소멸 해결) ──────────────────────

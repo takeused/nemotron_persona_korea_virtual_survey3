@@ -1,6 +1,24 @@
 # 진행상황 인수인계 (PROGRESS)
 
-마지막 업데이트: 2026-07-02 (✅✅✅ 계획#4 실행완료 — 문항별 선택보정 LOO검증 3/3 개선, report_compare.html 12절)
+마지막 업데이트: 2026-07-25 (로드맵 4·5·6 구현 상태 정리 및 report_compare.html 정합성 갱신)
+
+## ⏸ 2026-07-25 개선 phase1 파일럿 일시중지
+- **실행 목적:** `attitude-profile-v1`을 적용한 phase1(Q5~Q13) 파일럿 검증 후 본조사 자동 전환.
+- **출력:** `output/responses_phase1_coherence_pilot.jsonl` — 현재 원본 27건, 성공 15건, 실패 12건. 성공 응답에는 `profile_version: attitude-profile-v1` 기록 확인.
+- **중지 상태:** 사용자가 다음 세션 재개를 요청하여 파일럿·감시 프로세스 모두 종료. 본조사 `output/responses_phase1_coherence_main.jsonl`은 시작하지 않음.
+- **재개 명령:**
+  ```powershell
+  $env:PYTHONUNBUFFERED="1"
+  .\.venv\Scripts\python.exe survey\run_survey.py --model zai-glm-4.7 --personas output\personas_phase2.jsonl --out output\responses_phase1_coherence_pilot.jsonl --phase phase1 --limit 30 --workers 1 --min-interval 240 --max-retry 4 --max-tokens 8000
+  ```
+- **파일럿 완료 후 본조사:** 파일럿 성공 30명 확인 뒤 동일 명령에서 `--limit 30`을 제거하고 출력 파일을 `output/responses_phase1_coherence_main.jsonl`로 변경. 기존 `output/responses_phase1.jsonl`은 덮어쓰지 않음.
+- **환경:** 프로젝트 전용 `.venv`에 `openai`, `truststore` 설치 완료. Cerebras 호출은 OS 인증서 저장소 대응(`truststore`)을 사용.
+
+## ✅ 로드맵 4·5·6 현재 구현 상태
+- **#4 준지도 보정:** `survey/calibrate.py`로 구현·LOO 검증 완료. scale5 3개 앵커 전용이며 기본 집계에는 자동 적용하지 않음.
+- **#5 잠재 관여도 재가중:** `survey/engagement.py`와 `compute_engagement_weights()` 구현. `parse_aggregate*.py --engagement-weighted`로 선택 적용. 실제 관여도 외부 기준이 없으므로 25/50/25 목표분포는 가정이며 기본 결과와 병렬 비교해야 함.
+- **#6 페르소나 내 일관성:** `survey/coherence.py`의 `attitude-profile-v1`을 `build_prompt.py`에 조건화. UUID 기반 결정론적 프로파일을 phase 간 공유하며, 문항 순서 효과·단일콜의 인위적 과일관성까지 제거하는 것은 아님.
+- **미구현 고비용 항목:** 1인 다중 추출, 표본 확대, 모델 교체·앙상블, rank/branch/open용 실제 앵커 보정. 모두 추가 토큰·실제 기준분포가 필요함.
 
 ## ✅ 계획#4 완료 — 문항별 선택적 준지도 보정 (토큰 불필요, 사후분석)
 - **구현:** `survey/calibrate.py` — 실제조사 완전분포(Q5·Q6·Q14, PDF에서 확인된 표준 5점척도) 앵커로 로그오즈 시프트 계수 학습, Leave-One-Out 교차검증.
@@ -15,7 +33,7 @@
 - **검증 이력(2회 독립 재확인):** v4(n18~48)·v5(n25~60) 둘 다 v3 과잉보정(Q6 3.55/Q16 2.73/Q28 3.05) 대비 명확히 회복(Q6 3.7~4.0/Q16 3.16~3.30/Q28 3.10~3.41), Q22 접근성1위는 3회 연속(v4 44.5→v5 45.6, 실제43.6) 거의 일치 — 분산유지+평균회복 트레이드오프 없이 달성.
 - **원인 규명:** 과잉보정은 사후 계수(style_transform)가 아니라 프롬프트의 '무관심·귀찮음' 유도 문구가 원인이었음을 v2→v3(계수 절반↓해도 무변화) vs v4(프롬프트만 완화→회복) 대조실험으로 확증.
 - **문서화 완료:** `output/report_compare.html` 11절 "과잉보정 원인 규명 및 최종 해결" — 전체 버전 비교표+원인규명 박스+해결 박스+최종결론.
-- **남은 선택 과제(급하지 않음):** 계획#4 문항별 선택적 준지도 보정(JS divergence) — Q9 사회재난 모드, Q29-1/2 세부분류 등 잔차 개선용. 필요시 다음 세션에 착수.
+- **후속 선택 과제(급하지 않음):** Q9 사회재난 모드·Q29-1/2 세부분류용 실제 앵커 확대, rank/branch/open용 보정 설계, 다중 추출·모델 앙상블. 현재 #4 기본 검증은 완료되어 `survey/calibrate.py`에 보존됨.
 
 ### (참고, 완료됨) 과거 v5 재개블록 — 실행 완료, 기록용으로 남김
 ## ⏭️ [완료] v5 대표본 확정검증 (토큰 1M 리셋 후)

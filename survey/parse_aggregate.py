@@ -3,6 +3,7 @@ import argparse, json, os, collections, html
 from survey_schema import QUESTION_BY_ID, DISASTER_TYPES
 from sample_personas import PROVINCE_LABEL, AGE_LABEL
 from pop_table import compute_weights
+from engagement import engagement_score, ENGAGEMENT_VERSION
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "output")
 EDU_LABEL = {1: "고졸 이하", 2: "대학교 졸업", 3: "대학원 졸업"}
@@ -30,7 +31,8 @@ def load(responses, personas):
         p = pmap[u]
         recs.append({"uuid": u, "demographics": r["demographics"],
                      "answers": r["answers"], "stratum": p["stratum"],
-                     "occupation": p["persona"]["occupation"]})
+                     "occupation": p["persona"]["occupation"],
+                     "engagement_score": engagement_score(p["persona"], r["demographics"])})
     return recs, len(best), n_fail
 
 
@@ -133,11 +135,17 @@ def main():
     ap.add_argument("--personas", default=os.path.join(OUT_DIR, "personas_sample.jsonl"))
     ap.add_argument("--csv", default=os.path.join(OUT_DIR, "responses_phase1.csv"))
     ap.add_argument("--report", default=os.path.join(OUT_DIR, "report_phase1.html"))
+    ap.add_argument("--engagement-weighted", action="store_true",
+                    help=f"잠재 관여도 보정 가중치 적용({ENGAGEMENT_VERSION}); 기본은 기존 가중치")
     args = ap.parse_args()
 
     recs, n_total, n_fail = load(args.responses, args.personas)
     n = len(recs)
-    weights = compute_weights(recs)
+    if args.engagement_weighted:
+        from pop_table import compute_engagement_weights
+        weights = compute_engagement_weights(recs)
+    else:
+        weights = compute_weights(recs)
     print(f"로드: 총 {n_total}건, 성공 {n}, 실패 {n_fail} (성공률 {100*n/n_total:.1f}%)")
 
     # ── tidy CSV ──
@@ -217,11 +225,13 @@ def main():
              ".n{text-align:right;font-variant-numeric:tabular-nums}h2{border-bottom:2px solid #444;padding-top:12px}"
              ".mean{color:#1a5;margin:2px 0 6px}.note{background:#fff8e1;padding:10px 14px;border-left:4px solid #fb0;font-size:13px}"
              ".warn{background:#fdecea;padding:10px 14px;border-left:4px solid #e53935;font-size:13px;margin:12px 0}")
+    weight_note = ("사후층화 가중치 + 잠재 관여도 보정(옵트인) 적용" if args.engagement_weighted
+                   else "사후층화 가중치(표 7.2 모집단) 적용")
     body = f"""<!doctype html><meta charset=utf-8><title>재난안전 인식조사 — 합성 페르소나 1차(Q1~Q13)</title>
 <style>{style}</style>
 <h1>재난안전 기술 대국민 인식조사 — 합성 페르소나 결과 (1차: Q1~Q13)</h1>
 <div class=note>Nemotron-Personas-Korea 페르소나가 zai-glm-4.7로 1인칭 응답. 표본 {n}명(층화추출, 표 7.3 재현).
-사후층화 가중치(표 7.2 모집단) 적용. 성공률 {100*n/n_total:.1f}% (실패 {n_fail}).
+{weight_note}. 성공률 {100*n/n_total:.1f}% (실패 {n_fail}).
 가중%=모집단 추정치, 비가중%=원표본.</div>
 <div class=warn>{caveat}</div>
 <h2>II-0. 표본 구성 (인구통계 Q1~Q4)</h2>{demo}

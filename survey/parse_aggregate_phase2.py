@@ -88,11 +88,17 @@ def main():
     ap.add_argument("--personas", default=os.path.join(OUT_DIR, "personas_phase2.jsonl"))
     ap.add_argument("--csv", default=os.path.join(OUT_DIR, "responses_phase2.csv"))
     ap.add_argument("--report", default=os.path.join(OUT_DIR, "report_phase2.html"))
+    ap.add_argument("--engagement-weighted", action="store_true",
+                    help="잠재 관여도 보정 가중치 적용(기본은 기존 가중치)")
     args = ap.parse_args()
 
     recs, n_total, n_fail = load(args.responses, args.personas)
     n = len(recs)
-    weights = compute_weights(recs)
+    if args.engagement_weighted:
+        from pop_table import compute_engagement_weights
+        weights = compute_engagement_weights(recs)
+    else:
+        weights = compute_weights(recs)
     print(f"로드: 총 {n_total}건, 성공 {n}, 실패 {n_fail} (성공률 {100*n/n_total:.1f}%)")
 
     # ── tidy CSV ──
@@ -201,11 +207,13 @@ def main():
              ".note{background:#fff8e1;padding:10px 14px;border-left:4px solid #fb0;font-size:13px}"
              ".warn{background:#fdecea;padding:10px 14px;border-left:4px solid #e53935;font-size:13px;margin:12px 0}"
              "ul.open{font-size:13px;line-height:1.6;background:#f8f9fa;padding:10px 14px 10px 30px;border-radius:4px}")
+    weight_note = ("사후층화 가중치 + 잠재 관여도 보정(옵트인) 적용" if args.engagement_weighted
+                   else "사후층화 가중치(표 7.2 모집단) 적용")
     body = f"""<!doctype html><meta charset=utf-8><title>재난안전 인식조사 — 합성 페르소나 2차(Q14~Q30)</title>
 <style>{style}</style>
 <h1>재난안전 기술 대국민 인식조사 — 합성 페르소나 결과 (2차: Q14~Q30)</h1>
 <div class=note>Nemotron-Personas-Korea 페르소나가 zai-glm-4.7로 1인칭 응답. 표본 {n}명(1차와 동일 응답자, 층화추출).
-사후층화 가중치(표 7.2 모집단) 적용. 성공률 {100*n/n_total:.1f}% (실패 {n_fail}).
+{weight_note}. 성공률 {100*n/n_total:.1f}% (실패 {n_fail}).
 가중%=모집단 추정치, 비가중%=원표본.</div>
 <div class=warn>{caveat}</div>
 <h2>0. 표본 구성</h2>{demo}
